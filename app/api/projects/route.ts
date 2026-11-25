@@ -1,12 +1,6 @@
-import { NextResponse } from 'next/server';
-import { loadProjects } from '@/lib/server/projects';
+import { loadProjects } from '@/lib/server/zohoProjects';
+import { rowsResponse } from '@/lib/server/respond';
 
 export async function GET() {
-  try {
-    const data = await loadProjects();
-    return NextResponse.json(data, { headers: { 'Cache-Control': 'private, max-age=300' } });
-  } catch (err) {
-    console.error('GET /api/projects failed', err);
-    return NextResponse.json({ error: 'Could not load projects from Zoho.' }, { status: 502 });
-  }
+  return rowsResponse('projects from Zoho', loadProjects);
 }
