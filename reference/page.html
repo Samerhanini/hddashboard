@@ -1,0 +1,119 @@
+<!--
+  Page markup from the original dashboard (body only; it was mounted inside Claude's dashboard frame).
+  Elements with data-draw="name" were filled by the matching dash.draw('name', fn) in ui.js.
+  data-source / data-field attributes were provenance marks for the frame; they can be dropped.
+  The agenda table body is generated from agenda-template.json (one <tbody class="pt-ag-sec"> per section).
+  Views: the six .pt-view buttons show/hide sections by data-view-section.
+  data-only-depts / data-hide-depts limit a section to (or hide it from) departments.
+-->
+<div class="pt-wrap">
+  <header id="overview">
+    <div class="pt-tabs pt-depts" role="tablist" aria-label="Department">
+      <button type="button" class="pt-tab pt-dept" role="tab" data-dept="HD">
+        <span class="pt-icon-badge pt-dept-badge" data-draw="deptBadge" data-dept="HD" data-dept-color="0"></span>
+        <span class="pt-icon-text"><span class="pt-icon-name">Hanini Development</span><span class="pt-icon-meta" data-draw="deptCount" data-dept="HD">—</span></span>
+      </button>
+      <button type="button" class="pt-tab pt-dept" role="tab" data-dept="UC">
+        <span class="pt-icon-badge pt-dept-badge" data-draw="deptBadge" data-dept="UC" data-dept-color="1"></span>
+        <span class="pt-icon-text"><span class="pt-icon-name">Urban Core Builders</span><span class="pt-icon-meta" data-draw="deptCount" data-dept="UC">—</span></span>
+      </button>
+      <button type="button" class="pt-tab pt-dept" role="tab" data-dept="BS">
+        <span class="pt-icon-badge pt-dept-badge" data-draw="deptBadge" data-dept="BS" data-dept-color="2"></span>
+        <span class="pt-icon-text"><span class="pt-icon-name">Brick Studios</span><span class="pt-icon-meta" data-draw="deptCount" data-dept="BS">—</span></span>
+      </button>
+    </div>
+  </header>
+
+  <section id="project-browser">
+    <div class="pt-proj-head"><h2 class="pt-h2">Projects</h2><button type="button" class="pt-hidden-btn" data-draw="hiddenToggle"></button></div>
+    <div class="pt-icons" data-draw="projectIcons" data-source="projects"></div>
+  </section>
+
+  <nav class="pt-views" role="tablist" aria-label="Project view">
+    <button type="button" class="pt-view" role="tab" data-view="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 14.2c2.4-.3 4.5 1.4 5 4.3"/></svg><span>Overview</span></button>
+    <button type="button" class="pt-view" role="tab" data-view="agenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/></svg><span>Agenda</span></button>
+    <button type="button" class="pt-view" role="tab" data-view="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v3M16 3v3M7 13h6M10 16.5h7"/></svg><span>Schedule</span></button>
+    <button type="button" class="pt-view" role="tab" data-view="finance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 8.5c-.6-.9-1.7-1.5-3-1.5-1.7 0-3 .9-3 2.3 0 3.2 6 1.8 6 5 0 1.4-1.3 2.4-3 2.4-1.4 0-2.6-.6-3.2-1.6M12 5.5v13"/></svg><span>Finance</span></button>
+    <button type="button" class="pt-view" role="tab" data-view="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5l1.5 1.5L8 5.5M4 12.5l1.5 1.5L8 11.5M4 18.5l1.5 1.5L8 17.5M11 7h9M11 13h9M11 19h9"/></svg><span>Tasks</span></button>
+    <button type="button" class="pt-view" role="tab" data-view="meetings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10.5l6-3.5v10l-6-3.5"/></svg><span>Meetings</span></button>
+  </nav>
+
+  <section class="pt-card" id="project-overview" data-view-section="overview">
+    <h2 class="pt-h2" data-draw="ovTitle"></h2>
+    <p class="pt-sub">Team roster from the Project Team Roster Google Sheet</p>
+    <div data-draw="ovBody"></div>
+    <div class="pt-picker" id="pt-edit-panel" hidden>
+      <div class="pt-proj-head"><h3 class="pt-af-h3" data-draw="editTitle"></h3><button type="button" class="pt-hidden-btn" id="pt-edit-close">Close</button></div>
+      <div class="pt-picker-row"><input class="dash-input pt-edit-q" type="text" list="pt-edit-options" aria-label="New value"><datalist id="pt-edit-options" data-draw="editOptions"></datalist><button type="button" class="pt-hidden-btn" id="pt-edit-save">Save</button></div>
+      <div data-draw="editStatus"></div>
+    </div>
+    <div class="pt-picker" id="pt-crm-picker" hidden>
+      <div class="pt-proj-head"><h3 class="pt-af-h3" data-draw="pickTitle"></h3><button type="button" class="pt-hidden-btn" id="pt-pick-close">Close</button></div>
+      <div class="pt-picker-row"><input class="dash-input pt-pick-q" type="search" placeholder="Search Zoho CRM contacts by name, company or email" aria-label="Search Zoho CRM contacts"><button type="button" class="pt-hidden-btn" id="pt-pick-go">Search</button></div>
+      <div data-draw="pickResults"></div>
+    </div>
+  </section>
+
+  <section class="pt-card" id="project-hours" data-view-section="finance">
+    <h2 class="pt-h2" data-draw="hoursTitle"></h2>
+    <p class="pt-sub">Estimate from Zoho Projects: hours logged on each task, split evenly between the task’s owners</p>
+    <div data-draw="hoursBody"></div>
+  </section>
+
+  <section class="pt-card" id="project-quickbooks" data-view-section="finance" data-hide-depts="HD">
+    <h2 class="pt-h2" data-draw="qbTitle"></h2>
+    <p class="pt-sub">From QuickBooks Online · UrbanCore Builders LLC · all dates</p>
+    <div data-draw="qbBody"></div>
+  </section>
+
+  <section class="pt-card" id="project-appfolio" data-view-section="finance" data-only-depts="HD">
+    <h2 class="pt-h2" data-draw="afTitle"></h2>
+    <p class="pt-sub">From AppFolio · snapshot of November 17, 2026 · spend is bill amounts, paid and unpaid</p>
+    <div data-draw="afBody"></div>
+  </section>
+
+  <section class="pt-card" id="project-phases" data-view-section="schedule">
+    <h2 class="pt-h2" data-draw="phaseTitle"></h2>
+    <div class="pt-legend" data-draw="phaseLegend"></div>
+    <div class="pt-gantt" data-draw="phaseGantt" role="img" aria-label="Gantt chart of the selected project’s phases"></div>
+    <div data-draw="phaseEmpty"></div>
+  </section>
+
+  <section class="pt-card" id="project-meetings" data-view-section="meetings">
+    <div class="pt-proj-head"><h2 class="pt-h2" data-draw="meetTitle"></h2><button type="button" class="pt-hidden-btn" data-draw="meetHiddenToggle"></button></div>
+    <p class="pt-sub" data-draw="meetSub"></p>
+    <div class="pt-meet-list" data-draw="meetList"></div>
+  </section>
+
+  <section class="pt-card" id="project-agenda" data-view-section="agenda">
+    <div class="pt-proj-head"><h2 class="pt-h2" data-draw="agendaTitle"></h2><button type="button" class="pt-hidden-btn" id="pt-copy-agenda">Copy agenda</button></div>
+    <div class="pt-table-wrap">
+      <table class="pt-ag-table" id="agenda-outline">
+        <colgroup><col style="width:34%"><col style="width:22%"><col style="width:22%"><col style="width:22%"></colgroup>
+        <thead><tr><th scope="col">Item</th><th scope="col">Last week</th><th scope="col">This week</th><th scope="col">Upcoming</th></tr></thead>
+        <!--
+          One block per section in agenda-template.json, numbered 1..9, e.g.:
+          <tbody class="pt-ag-sec" id="agenda-design">
+            <tr class="pt-ag-band"><th colspan="4" scope="colgroup"><span class="pt-ag-num">4.</span> Design</th></tr>
+            <tr><td class="pt-ag-item">Owner decisions needed</td>
+                <td class="pt-ag-cell" data-draw="agCell" data-sec="Design" data-item="Owner decisions needed" data-col="last"></td>
+                <td class="pt-ag-cell" data-draw="agCell" data-sec="Design" data-item="Owner decisions needed" data-col="this"></td>
+                <td class="pt-ag-cell" data-draw="agCell" data-sec="Design" data-item="Owner decisions needed" data-col="up"></td></tr>
+          </tbody>
+        -->
+      </table>
+    </div>
+  </section>
+
+  <section class="pt-card" id="project-tasks" data-view-section="tasks">
+    <h2 class="pt-h2" data-draw="projectTitle">—</h2>
+    <p class="pt-sub" data-draw="projectSub"></p>
+    <div class="pt-table-wrap">
+      <table class="pt-table">
+        <thead><tr><th>Task</th><th>Task list</th><th>Owner</th><th>Status</th><th class="pt-num">% done</th><th>Due</th></tr></thead>
+        <tbody data-draw="projectTaskRows"></tbody>
+      </table>
+    </div>
+    <div data-draw="projectTaskEmpty"></div>
+  </section>
+</div>
