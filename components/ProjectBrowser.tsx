@@ -1,7 +1,8 @@
 'use client';
 
 import { format } from 'd3';
-import { COLORS, deptProjects, projectBadge } from '@/lib/rules';
+import { afMatch, COLORS, deptProjects, projectBadge, qbMatch } from '@/lib/rules';
+import { useAfLoans, useAfSpend, useQbAr, useQbSales } from '@/lib/hooks';
 import type { ProjectRow } from '@/lib/types';
 import { useDashboard } from './DashboardContext';
 
@@ -57,12 +58,20 @@ export default function ProjectBrowser() {
   );
 }
 
-/**
- * In the Finance view, tiles with QuickBooks (UC) or AppFolio (HD) activity are highlighted green.
- * The QuickBooks and AppFolio data arrive with the Finance view (stage 3); until then nothing is highlighted.
- */
+/** In the Finance view, tiles with QuickBooks (UC) or AppFolio (HD) activity are highlighted green. */
 function useDashboardWithFinance() {
   const ctx = useDashboard();
-  const hasFinance = (_p: ProjectRow) => false;
+  const finOn = ctx.view === 'finance';
+  // Only fetched while the Finance view is open, for the department that uses it.
+  const qs = useQbSales(finOn && ctx.dept === 'UC'), qa = useQbAr(finOn && ctx.dept === 'UC');
+  const as = useAfSpend(finOn && ctx.dept === 'HD'), al = useAfLoans(finOn && ctx.dept === 'HD');
+  const qbOn = finOn && ctx.dept === 'UC' && qs.status === 'ok' && qa.status === 'ok';
+  const afOn = finOn && ctx.dept === 'HD' && as.status === 'ok' && al.status === 'ok';
+  const hasFinance = (p: ProjectRow) => {
+    if (!finOn) return false;
+    if (qbOn) { const s = qbMatch(qs.data, p), a = qbMatch(qa.data, p); if ((s && s.total_sales) || (a && a.total)) return true; }
+    // ptAfHasActivity
+    return afOn && (afMatch(as.data, p).some((r) => r.spent_to_date || r.spend_ytd) || afMatch(al.data, p).length > 0);
+  };
   return { ...ctx, hasFinance };
 }

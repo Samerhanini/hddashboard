@@ -1,0 +1,42 @@
+{
+  "_note": "Weekly agenda outline shown in the Agenda view. Each item has three columns (Last week, This week, Upcoming) filled from the Agenda tab of the Google Sheet, matched by project name, ISO week, section and item text (case-insensitive, curly quotes normalised). 'Last week' falls back to the previous week's 'This week' when empty.",
+  "sections": [
+    { "id": "agenda-schedule-critical-path", "title": "Schedule and critical path", "items": [
+      "Current phase and next milestone",
+      "Slipped phase dates and what's driving them",
+      "Effect on closing, permit or construction start" ] },
+    { "id": "agenda-acquisition-site-control", "title": "Acquisition and site control", "items": [
+      "Purchase agreement deadlines, deposits, extension options",
+      "Due diligence: title, survey, Phase I, rent roll, estoppels",
+      "Tenant buyouts and relocations" ] },
+    { "id": "agenda-entitlements-approvals", "title": "Entitlements and approvals", "items": [
+      "Planning board, zoning, landmarks/SHPO submissions and hearings",
+      "City council resolutions, PILOT, redevelopment agreements",
+      "Open questions for land use counsel" ] },
+    { "id": "agenda-design", "title": "Design", "items": [
+      "Stage: schematic, DD, CDs, permit set",
+      "Owner decisions needed",
+      "Consultant coordination (MEP, structural, civil) and deliverable dates",
+      "Cost estimate feedback" ] },
+    { "id": "agenda-financing-capital", "title": "Financing and capital", "items": [
+      "Equity: commitments, investor materials, terms",
+      "Debt: term sheets, appraisal, loan commitment, closing conditions",
+      "Incentives: LIHTC, historic tax credits, NJEDA, HMFA deadlines",
+      "Pro forma changes" ] },
+    { "id": "agenda-budget-cost", "title": "Budget and cost", "items": [
+      "Spend to date vs. budget",
+      "Open invoices and upcoming draws",
+      "Changes to total development cost or contingency" ] },
+    { "id": "agenda-construction", "title": "Construction, when active", "items": [
+      "GC procurement, bids, GMP",
+      "Permits, site logistics, progress, safety",
+      "Change orders and RFIs needing decisions" ] },
+    { "id": "agenda-leasing", "title": "Leasing, marketing and operations, when relevant", "items": [
+      "Commercial tenant talks and LOIs",
+      "Residential lease-up",
+      "Property management handoff" ] },
+    { "id": "agenda-risks-decisions-needed", "title": "Risks and decisions needed", "items": [
+      "Top 3 risks with mitigation and owner",
+      "Decisions needed from sponsors this week" ] }
+  ]
+}

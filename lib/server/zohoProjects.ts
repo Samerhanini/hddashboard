@@ -1,6 +1,6 @@
-import type { ApiRows, PhaseRow, ProjectRow, TaskRow } from '../types';
+import type { ApiRows, HoursRow, PhaseRow, ProjectRow, TaskRow } from '../types';
 import { sampleProjects } from '../fixtures/projects';
-import { sampleProjectData } from '../fixtures/tasks';
+import { sampleHours, sampleProjectData } from '../fixtures/tasks';
 import { hasEnv } from './env';
 
 // Zoho Projects loaders (datasets.json -> projects, projectTasks, projectPhases).
@@ -18,6 +18,11 @@ export async function loadProjectTasks(projectId: string): Promise<ApiRows<TaskR
   const set = sampleProjectData(projectId);
   const rows = set ? set.tasks.slice().sort((a, b) => (Date.parse(a.due || '') || Infinity) - (Date.parse(b.due || '') || Infinity)) : [];
   return { rows: rows.slice(0, 200), truncated: rows.length > 200, source: 'sample' };
+}
+
+/** Logged hours per task owner (all tasks, all pages), each owner getting an even share of a task's hours. */
+export async function loadProjectHours(projectId: string): Promise<ApiRows<HoursRow>> {
+  return { rows: sampleHours(projectId), source: 'sample' };
 }
 
 /** Phases (milestones) used by the project's tasks, with owner, status, colour and dates. */

@@ -1,0 +1,194 @@
+'use client';
+
+import { useMemo } from 'react';
+import * as d3 from 'd3';
+import { afMatch, COLORS, qbMatch } from '@/lib/rules';
+import { useAfLoans, useAfSpend, useProjectHours, useQbAr, useQbSales } from '@/lib/hooks';
+import type { AppfolioLoanRow, AppfolioSpendRow, HoursByPersonRow, HoursRow } from '@/lib/types';
+import { useDashboard } from '../DashboardContext';
+
+const fmtNum = d3.format(',');
+const fmtUsd = d3.format('$,.0f');
+const fmt1 = d3.format(',.1f');
+
+/** hoursByPerson (dash.calc in the original): hours per person, shared tasks split evenly. */
+export function hoursByPerson(rows: HoursRow[]): HoursByPersonRow[] {
+  const m = new Map<string, { person: string; hours: number; tasks: number; shared_tasks: number }>();
+  rows.forEach((r) => {
+    const e = m.get(r.person) || { person: r.person, hours: 0, tasks: 0, shared_tasks: 0 };
+    e.hours += r.hours; e.tasks += 1; if (r.owners > 1) e.shared_tasks += 1;
+    m.set(r.person, e);
+  });
+  const total = [...m.values()].reduce((s, e) => s + e.hours, 0);
+  return [...m.values()]
+    .map((e) => ({ person: e.person, hours: Math.round(e.hours * 10) / 10, share: total ? Math.round((e.hours / total) * 1000) / 10 : 0, tasks: e.tasks, shared_tasks: e.shared_tasks }))
+    .sort((a, b) => b.hours - a.hours);
+}
+
+/** Hours by person card (hoursTitle + hoursBody). */
+export function HoursCard() {
+  const { project, projectId } = useDashboard();
+  const raw = useProjectHours(projectId);
+  const rows = useMemo(() => (raw.status === 'ok' ? hoursByPerson(raw.data) : null), [raw.status, raw.data]);
+
+  let body: React.ReactNode = null;
+  if (raw.status === 'error') body = <div className="pt-empty">Failed to load</div>;
+  else if (rows && !rows.length) body = <div className="pt-empty">No hours are logged on this project’s tasks in Zoho.</div>;
+  else if (rows) {
+    const total = d3.sum(rows, (r) => r.hours);
+    const max = d3.max(rows, (r) => r.hours) || 0;
+    body = (
+      <>
+        <div className="pt-table-wrap">
+          <table className="pt-table pt-hours-table">
+            <thead><tr><th>Person</th><th className="pt-num">Hours</th><th className="pt-num">Share</th><th className="pt-num">Tasks with hours</th><th className="pt-num">Of which shared</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.person}>
+                  <td>{r.person}</td>
+                  <td className="pt-num"><span className="pt-hbar" style={{ width: total ? (60 * r.hours) / max : 0, background: COLORS[0] }} />{fmt1(r.hours)}</td>
+                  <td className="pt-num">{fmt1(r.share)}%</td>
+                  <td className="pt-num">{fmtNum(r.tasks)}</td>
+                  <td className="pt-num">{fmtNum(r.shared_tasks)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="pt-empty">
+          {fmt1(total)} hours logged in total. Hours on a task with several owners are divided equally between them, so per-person figures are estimates, not timesheet records.
+          {raw.truncated ? ' Only the first 2,000 tasks were read.' : ''}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <section className="pt-card" id="project-hours">
+      <h2 className="pt-h2">{project ? project.name + ' — hours by person' : 'Hours by person'}</h2>
+      <p className="pt-sub">Estimate from Zoho Projects: hours logged on each task, split evenly between the task’s owners</p>
+      <div className={raw.status === 'loading' ? 'dash-skeleton' : undefined} style={raw.status === 'loading' ? { minHeight: 100 } : undefined}>{body}</div>
+    </section>
+  );
+}
+
+/** QuickBooks card (qbTitle + qbBody). Shown for UC and BS; figures only for UC. */
+export function QuickBooksCard() {
+  const { project, dept } = useDashboard();
+  const s = useQbSales(), a = useQbAr();
+  const loading = s.status === 'loading' || a.status === 'loading';
+
+  let body: React.ReactNode = null;
+  const msg = (t: string) => <div className="pt-empty">{t}</div>;
+  if (loading) body = null;
+  else if (s.status === 'error' || a.status === 'error') body = msg('Failed to load');
+  else if (project && s.status === 'ok' && a.status === 'ok') {
+    if (dept !== 'UC') body = msg('QuickBooks is connected to UrbanCore Builders LLC, so figures appear for UC projects only.');
+    else {
+      const sale = qbMatch(s.data, project), ar = qbMatch(a.data, project);
+      if (!sale && !ar) body = msg('No QuickBooks customer matches this project. QuickBooks names UC jobs like “153 Halsey J04”, matched by building number and job number.');
+      else {
+        const cust = (sale || ar)!.customer;
+        const buckets: [string, number][] = ar ? [['Current', ar.current], ['1–30 days', ar.d1_30], ['31–60 days', ar.d31_60], ['61–90 days', ar.d61_90], ['91+ days', ar.d91_plus]] : [];
+        const colors = ['var(--color-good, #3c8d5a)', COLORS[0], COLORS[1 % COLORS.length], 'var(--color-warn)', 'var(--color-bad)'];
+        body = (
+          <>
+            <div className="pt-qb">
+              <div><div className="pt-qb-label">Invoiced to date</div><div className="pt-qb-val">{fmtUsd(sale ? sale.total_sales : 0)}</div></div>
+              <div><div className="pt-qb-label">Open balance (A/R)</div><div className={'pt-qb-val' + (ar && ar.total > 0 ? ' pt-warn' : '')}>{fmtUsd(ar ? ar.total : 0)}</div></div>
+              <div><div className="pt-qb-label">Over 90 days past due</div><div className={'pt-qb-val' + (ar && ar.d91_plus > 0 ? ' pt-bad' : '')}>{fmtUsd(ar ? ar.d91_plus : 0)}</div></div>
+            </div>
+            {ar && ar.total > 0 && (
+              <>
+                <div className="pt-qb-aging">
+                  {buckets.map(([n, v], i) => (v ? <span key={n} style={{ width: (100 * v) / ar.total + '%', background: colors[i] }} title={n + ': ' + fmtUsd(v)} /> : null))}
+                </div>
+                <div className="pt-qb-legend">
+                  {buckets.map(([n, v], i) => (v ? <span key={n}><i style={{ background: colors[i] }} />{n + ' ' + fmtUsd(v)}</span> : null))}
+                </div>
+              </>
+            )}
+            <div className="pt-empty">QuickBooks customer: {cust}</div>
+          </>
+        );
+      }
+    }
+  }
+
+  return (
+    <section className="pt-card" id="project-quickbooks">
+      <h2 className="pt-h2">{project ? project.name + ' — QuickBooks' : 'QuickBooks'}</h2>
+      <p className="pt-sub">From QuickBooks Online · UrbanCore Builders LLC · all dates</p>
+      <div className={loading ? 'dash-skeleton' : undefined} style={loading ? { minHeight: 80 } : undefined}>{body}</div>
+    </section>
+  );
+}
+
+const fmtD = d3.utcFormat('%b %-d, %Y');
+const parseD = d3.utcParse('%Y-%m-%d');
+const usd = (v: number | null | undefined) => (v == null ? '—' : fmtUsd(v));
+const longDate = (v: string | undefined) => { const d = v ? parseD(v.slice(0, 10)) : null; return d ? d3.utcFormat('%B %-d, %Y')(d) : 'unknown date'; };
+
+interface Col<T> { label: string; num?: boolean; fmt: (r: T) => string }
+function Table<T>({ cols, rows, rowKey }: { cols: Col<T>[]; rows: T[]; rowKey: (r: T) => string }) {
+  return (
+    <div className="pt-table-wrap">
+      <table className="pt-table">
+        <thead><tr>{cols.map((c) => <th key={c.label} className={c.num ? 'pt-num' : undefined}>{c.label}</th>)}</tr></thead>
+        <tbody>{rows.map((r) => <tr key={rowKey(r)}>{cols.map((c) => <td key={c.label} className={c.num ? 'pt-num' : undefined}>{c.fmt(r)}</td>)}</tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
+/** AppFolio card (afTitle + afBody). HD only. */
+export function AppFolioCard() {
+  const { project } = useDashboard();
+  const s = useAfSpend(), l = useAfLoans();
+  const loading = s.status === 'loading' || l.status === 'loading';
+
+  let body: React.ReactNode = null;
+  if (s.status === 'error' || l.status === 'error') body = <div className="pt-empty">Failed to load</div>;
+  else if (project && s.status === 'ok' && l.status === 'ok') {
+    const spend = afMatch(s.data, project), loans = afMatch(l.data, project);
+    if (!spend.length && !loans.length) {
+      body = <div className="pt-empty">No AppFolio property matches this project. Properties are matched by building number and street, e.g. HD609BRO → 609 Broad St.</div>;
+    } else {
+      const propCol: Col<AppfolioSpendRow> = { label: 'Property', fmt: (r) => (r.property || '') + (r.street ? ' · ' + r.street : '') };
+      const noBills = <div className="pt-empty">No bills recorded in AppFolio for this property.</div>;
+      body = (
+        <>
+          <div className="pt-af-sec">
+            <h3 className="pt-af-h3">Loan</h3>
+            {!loans.length ? <div className="pt-empty">No active loans recorded in AppFolio for this property.</div> : (
+              <Table<AppfolioLoanRow> rowKey={(r) => r.loan_id} rows={loans.slice().sort((a, b) => (b.balance || 0) - (a.balance || 0))} cols={[
+                { label: 'Lender', fmt: (r) => r.lender || '—' },
+                { label: 'Property', fmt: (r) => r.street || '—' },
+                { label: 'Balance', num: true, fmt: (r) => usd(r.balance) },
+                { label: 'Rate', num: true, fmt: (r) => (r.interest_rate == null ? '—' : r.interest_rate.toFixed(2) + '%') },
+                { label: 'Monthly payment', num: true, fmt: (r) => usd(r.monthly_payment) },
+                { label: 'Matures', fmt: (r) => { const d = r.maturity_date ? parseD(String(r.maturity_date).slice(0, 10)) : null; return d ? fmtD(d) : '—'; } },
+              ]} />
+            )}
+          </div>
+          <div className="pt-af-sec">
+            <h3 className="pt-af-h3">Spent to date</h3>
+            {!spend.length ? noBills : <Table<AppfolioSpendRow> rowKey={(r) => r.property_id} rows={spend} cols={[propCol, { label: 'Bills', num: true, fmt: (r) => fmtNum(r.bills_to_date || 0) }, { label: 'Spent to date', num: true, fmt: (r) => usd(r.spent_to_date) }]} />}
+          </div>
+          <div className="pt-af-sec">
+            <h3 className="pt-af-h3">Spend year to date ({new Date().getFullYear()})</h3>
+            {!spend.length ? noBills : <Table<AppfolioSpendRow> rowKey={(r) => r.property_id} rows={spend} cols={[propCol, { label: 'Bills', num: true, fmt: (r) => fmtNum(r.bills_ytd || 0) }, { label: 'Spend YTD', num: true, fmt: (r) => usd(r.spend_ytd) }]} />}
+          </div>
+        </>
+      );
+    }
+  }
+
+  return (
+    <section className="pt-card" id="project-appfolio">
+      <h2 className="pt-h2">{project ? project.name + ' — AppFolio' : 'AppFolio'}</h2>
+      <p className="pt-sub">From AppFolio · snapshot of {longDate(s.asOf)} · spend is bill amounts, paid and unpaid{s.source === 'sample' ? ' · sample data' : ''}</p>
+      <div className={loading ? 'dash-skeleton' : undefined} style={loading ? { minHeight: 120 } : undefined}>{body}</div>
+    </section>
+  );
+}

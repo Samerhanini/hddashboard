@@ -2,7 +2,7 @@
 // `projectPhases` loaders in reference/data-loaders.js. Generated from each project's dates and
 // today's date so the views show a realistic mix of finished, current, overdue and upcoming work.
 
-import type { PhaseRow, ProjectRow, TaskRow } from '../types';
+import type { HoursRow, PhaseRow, ProjectRow, TaskRow } from '../types';
 import { sampleProjects } from './projects';
 
 // Small seeded random generator so a project always gets the same sample data.
@@ -99,4 +99,27 @@ export function sampleProjectData(projectId: string): SampleSet | null {
   const set = build(p);
   cache.set(projectId, { day, set });
   return set;
+}
+
+/**
+ * Sample logged hours (projectHours loader shape): one row per owner of each task with hours,
+ * each owner getting an even share. Includes closed tasks, like the original's all-tasks read.
+ */
+export function sampleHours(projectId: string): HoursRow[] {
+  const set = sampleProjectData(projectId);
+  if (!set) return [];
+  const r = rng(projectId + ':hours');
+  const p = sampleProjects.find((x) => x.id === projectId)!;
+  const tasks = [
+    ...set.tasks.map((t) => ({ id: t.id, owners: t.owners })),
+    ...Array.from({ length: p.closed_tasks }, (_, i) => ({ id: projectId + '2' + String(i + 1).padStart(3, '0'), owners: PEOPLE[Math.floor(r() * 5)] + (r() < 0.2 ? ', ' + PEOPLE[Math.floor(r() * 5)] : '') })),
+  ];
+  const rows: HoursRow[] = [];
+  tasks.forEach((t) => {
+    if (r() < 0.45) return;
+    const total = Math.round((0.5 + r() * 14) * 4) / 4;
+    const names = [...new Set(t.owners.split(', ').filter(Boolean))];
+    names.forEach((n) => rows.push({ project_id: projectId, task_id: t.id, person: n, owners: names.length, task_hours: total, hours: Math.round((total / names.length) * 100) / 100 }));
+  });
+  return rows;
 }

@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import type { ApiRows } from '../types';
 
 /** Run a loader and answer with JSON, cached briefly in the browser (5 minutes) to spare the vendors' rate limits. */
-export async function rowsResponse<T>(label: string, load: () => Promise<ApiRows<T>>): Promise<NextResponse> {
+export async function rowsResponse<T>(label: string, load: () => Promise<ApiRows<T>>, cacheControl = 'private, max-age=300'): Promise<NextResponse> {
   try {
     const data = await load();
-    return NextResponse.json(data, { headers: { 'Cache-Control': 'private, max-age=300' } });
+    return NextResponse.json(data, { headers: { 'Cache-Control': cacheControl } });
   } catch (err) {
     console.error(`${label} failed`, err);
     return NextResponse.json({ error: `Could not load ${label}.` }, { status: 502 });
