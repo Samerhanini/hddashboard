@@ -16,6 +16,11 @@ export interface DatasetState<T> {
 
 async function fetcher<T>(url: string): Promise<ApiRows<T>> {
   const res = await fetch(url, { credentials: 'same-origin' });
+  if (res.status === 401) {
+    // Session ended (e.g. signed out in another tab): go to sign-in and come back here afterwards.
+    window.location.href = '/signin?callbackUrl=' + encodeURIComponent(window.location.pathname + window.location.hash);
+    throw new Error('Signed out');
+  }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((body && body.error) || `Request failed (${res.status})`);
   return body as ApiRows<T>;

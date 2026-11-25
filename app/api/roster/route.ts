@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { addRow, loadRoster, removeRow, RosterConflict, WRITABLE_FIELDS, writeCells, type WritableField } from '@/lib/server/roster';
 import { badInput, rowsResponse } from '@/lib/server/respond';
+import { requireSession } from '@/lib/server/session';
 
 // GET reads the Roster tab. PATCH edits cells of one row, POST appends a row, DELETE removes a row.
 // Every write names the row it expects (sheet row + Row ID + Project) and is refused if the sheet changed.
@@ -39,6 +40,8 @@ async function write(label: string, fn: () => Promise<void>) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const denied = await requireSession();
+  if (denied) return denied;
   const b = await body(req);
   const ref = b && rowRef(b);
   const values = b && b.values;
@@ -53,12 +56,16 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireSession();
+  if (denied) return denied;
   const b = await body(req);
   if (!b || !str(b.project, 200) || !b.project.trim() || !str(b.tier1, 100) || !str(b.tier2, 100)) return badInput('Invalid new roster line.');
   return write('add', () => addRow(b.project as string, b.tier1 as string, b.tier2 as string));
 }
 
 export async function DELETE(req: NextRequest) {
+  const denied = await requireSession();
+  if (denied) return denied;
   const b = await body(req);
   const ref = b && rowRef(b);
   if (!ref) return badInput('Invalid roster row.');
