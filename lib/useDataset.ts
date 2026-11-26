@@ -11,6 +11,8 @@ export interface DatasetState<T> {
   truncated?: boolean;
   source?: ApiRows<T>['source'];
   asOf?: string;
+  /** Hours only: true when rows are exact time-log records, false when estimated. */
+  exact?: boolean;
   refresh: () => void;
 }
 
@@ -36,5 +38,5 @@ export function useDataset<T>(url: string | null): DatasetState<T> {
   if (!url) return { status: 'idle', data: [], refresh };
   if (error) return { status: 'error', data: [], message: error instanceof Error ? error.message : String(error), refresh };
   if (!data) return { status: 'loading', data: [], refresh };
-  return { status: 'ok', data: data.rows, truncated: data.truncated, source: data.source, asOf: data.asOf, refresh };
+  return { status: 'ok', data: data.rows, truncated: data.truncated, source: data.source, asOf: data.asOf, exact: data.exact, refresh };
 }

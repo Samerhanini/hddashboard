@@ -54,10 +54,15 @@ export interface PhaseRow {
 export interface HoursRow {
   project_id: string;
   task_id: string;
+  /** Task (or bug / general log) the time was logged against. */
+  task?: string;
   person: string;
+  /** Distinct people who logged time on this task (not the task's owners). */
   owners: number;
   task_hours: number;
   hours: number;
+  /** How many separate time-log entries make up this row. */
+  entries?: number;
 }
 
 export interface HoursByPersonRow {
@@ -165,4 +170,10 @@ export interface ApiRows<T> {
   /** 'sample' while credentials aren't set, 'live' once they are, 'snapshot' for static files. */
   source: 'sample' | 'live' | 'snapshot';
   asOf?: string;
+  /**
+   * Hours only: true when rows come from Zoho time logs (each person's own
+   * logged hours), false when they are the old estimate (a task's total hours
+   * split evenly between its owners). Undefined for other datasets.
+   */
+  exact?: boolean;
 }
