@@ -11,7 +11,7 @@ const fmtNum = d3.format(',');
 const fmtUsd = d3.format('$,.0f');
 const fmt1 = d3.format(',.1f');
 
-/** hoursByPerson (dash.calc in the original): hours per person, shared tasks split evenly. */
+/** hoursByPerson: exact hours per person, summed from that person's own time-log rows (one row per task they logged on). */
 export function hoursByPerson(rows: HoursRow[]): HoursByPersonRow[] {
   const m = new Map<string, { person: string; hours: number; tasks: number; shared_tasks: number }>();
   rows.forEach((r) => {
@@ -30,6 +30,7 @@ export function HoursCard() {
   const { project, projectId } = useDashboard();
   const raw = useProjectHours(projectId);
   const rows = useMemo(() => (raw.status === 'ok' ? hoursByPerson(raw.data) : null), [raw.status, raw.data]);
+  const exact = raw.exact === true;
 
   let body: React.ReactNode = null;
   if (raw.status === 'error') body = <div className="pt-empty">Failed to load</div>;
@@ -56,7 +57,9 @@ export function HoursCard() {
           </table>
         </div>
         <div className="pt-empty">
-          {fmt1(total)} hours logged in total. Hours on a task with several owners are divided equally between them, so per-person figures are estimates, not timesheet records.
+          {exact
+            ? `${fmt1(total)} hours logged in total. From Zoho time logs (billable and non-billable): every entry counts under the person who logged it, on the task they logged it against — nothing is split between owners.`
+            : `${fmt1(total)} hours logged in total. Hours on a task with several owners are divided equally between them, so per-person figures are estimates, not timesheet records.${raw.source === 'live' ? ' Exact time logs need the ZohoProjects.timesheets.READ scope on the dashboard’s Zoho Self Client.' : ''}`}
           {raw.truncated ? ' Only the first 2,000 tasks were read.' : ''}
         </div>
       </>
@@ -66,7 +69,7 @@ export function HoursCard() {
   return (
     <section className="pt-card" id="project-hours">
       <h2 className="pt-h2">{project ? project.name + ' — hours by person' : 'Hours by person'}</h2>
-      <p className="pt-sub">Estimate from Zoho Projects: hours logged on each task, split evenly between the task’s owners</p>
+      <p className="pt-sub">{exact ? 'Exact timesheet records from Zoho Projects: each person’s own logged hours' : 'Estimate from Zoho Projects: hours logged on each task, split evenly between the task’s owners'}</p>
       <div className={raw.status === 'loading' ? 'dash-skeleton' : undefined} style={raw.status === 'loading' ? { minHeight: 100 } : undefined}>{body}</div>
     </section>
   );
