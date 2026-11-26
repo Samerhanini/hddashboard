@@ -3,7 +3,7 @@ import { sampleProjects } from '../fixtures/projects';
 import { sampleHours, sampleProjectData } from '../fixtures/tasks';
 import { cached } from './cache';
 import { hasNextPage, parseHours, parsePhase, parseProjects, parseTasks, parseTimelogs, phaseIdsOf } from './parse/zoho';
-import { mapLimit, portalId, projectsBase, zohoGet, zohoReady } from './zoho';
+import { mapLimit, portalId, projectsBase, projectsRestBase, zohoGet, zohoReady } from './zoho';
 
 // Zoho Projects loaders (datasets.json -> projects, projectTasks, projectHours, projectPhases).
 // Sample rows while the Zoho credentials aren't set; live Zoho Projects V3 calls once they are.
@@ -58,14 +58,67 @@ function allTaskPages(projectId: string): Promise<{ pages: unknown[]; truncated:
   });
 }
 
+/**
+ * Diagnostic for the hours card: how many tasks Zoho returned per page, which statuses and depths they
+ * have, and the raw logged-hours fields of a few tasks. Contains project data only, never credentials.
+ */
+export async function debugProjectHours(projectId: string) {
+  const { pages, truncated } = await allTaskPages(projectId);
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const tasksOf = (a: any): any[] => { const r = a && a.data ? a.data : a; return Array.isArray(r) ? r : (r && r.tasks) || []; };
+  const all = pages.flatMap(tasksOf);
+  const count = (f: (t: any) => string) => all.reduce((m: Record<string, number>, t) => { const k = f(t); m[k] = (m[k] || 0) + 1; return m; }, {});
+  const withHours = all.filter((t) => t.log_hours && Object.values(t.log_hours).some((v) => v && v !== '0' && v !== '0:00' && v !== '00:00'));
+  const pick = (t: any) => ({ id: t.id, name: t.name, status: t.status && t.status.name, depth: t.depth, owners: ((t.owners_and_work && t.owners_and_work.owners) || []).map((o: any) => o.name), log_hours: t.log_hours, other_hour_fields: Object.fromEntries(Object.entries(t).filter(([k]) => /hour|log|work|duration/i.test(k) && k !== 'log_hours' && k !== 'owners_and_work')) });
+  return {
+    pages_read: pages.length,
+    tasks_per_page: pages.map((p) => tasksOf(p).length),
+    more_pages_not_read: truncated,
+    total_tasks: all.length,
+    tasks_by_status: count((t) => (t.status && t.status.name) || '(none)'),
+    tasks_by_depth: count((t) => String(t.depth ?? '(none)')),
+    tasks_with_logged_hours: withHours.length,
+    field_names_on_a_task: all[0] ? Object.keys(all[0]).sort() : [],
+    examples_with_hours: withHours.slice(0, 5).map(pick),
+    example_without_hours: all.find((t) => !withHours.includes(t)) ? pick(all.find((t) => !withHours.includes(t))) : null,
+    first_page_info: (() => { const p: any = pages[0]; const r = p && p.data ? p.data : p; return r && !Array.isArray(r) ? r.page_info || null : '(plain list, no page_info)'; })(),
+  };
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
+/**
+ * Diagnostic for switching the hours card to real time logs (who logged each hour). Tries the likely
+ * Zoho time-log endpoints and shows each raw answer, trimmed. Needs the ZohoProjects.timesheets.READ scope.
+ */
+export async function debugTimelogs(projectId: string) {
+  const d = new Date();
+  const mmddyyyy = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${d.getFullYear()}`;
+  const attempts: { name: string; url: string; params: Record<string, string | number> }[] = [
+    { name: 'v3 timelogs (task, projectspan)', url: `${projectsBase()}/projects/${projectId}/timelogs`, params: { module: JSON.stringify({ type: 'task' }), view_type: 'projectspan', page: 1, per_page: 50 } },
+    { name: 'v3 timelogs (task)', url: `${projectsBase()}/projects/${projectId}/timelogs`, params: { module: JSON.stringify({ type: 'task' }), page: 1, per_page: 50 } },
+    { name: 'v2 logs (month)', url: `${projectsRestBase()}/projects/${projectId}/logs/`, params: { users_list: 'all', view_type: 'month', date: mmddyyyy, bill_status: 'All', component_type: 'task' } },
+    { name: 'v2 logs (custom range)', url: `${projectsRestBase()}/projects/${projectId}/logs/`, params: { users_list: 'all', view_type: 'custom_date', custom_date: JSON.stringify({ start_date: '01-01-2015', end_date: mmddyyyy }), bill_status: 'All', component_type: 'task' } },
+  ];
+  const results = [];
+  for (const a of attempts) {
+    try {
+      const ans = await zohoGet(a.url, a.params);
+      results.push({ attempt: a.name, ok: true, answer_start: JSON.stringify(ans).slice(0, 2500) });
+    } catch (err) {
+      results.push({ attempt: a.name, ok: false, error: String(err instanceof Error ? err.message : err).slice(0, 500) });
+    }
+  }
+  return results;
+}
+
 const TIMELOG_MAX_PAGES = 50; // 50 pages x 200 date-groups, far above any one project
 
-/** Exact logged hours per person, from Zoho Projects time logs (not task totals). */
-async function loadTimelogs(projectId: string): Promise<ApiRows<HoursRow>> {
+/** One full read of the V3 Bulk Time Logs endpoint with the given extra params. */
+async function readTimelogs(projectId: string, extra: Record<string, string | number>): Promise<ApiRows<HoursRow>> {
   const pages: unknown[] = [];
   let page = 1, more = true;
   while (more && page <= TIMELOG_MAX_PAGES) {
-    const ans = await zohoGet(`${projectsBase()}/projects/${projectId}/timelogs`, { view_type: 'projectspan', per_page: PER_PAGE, page });
+    const ans = await zohoGet(`${projectsBase()}/projects/${projectId}/timelogs`, { view_type: 'projectspan', per_page: PER_PAGE, page, ...extra });
     pages.push(ans);
     more = hasNextPage(ans);
     page += 1;
@@ -80,6 +133,9 @@ async function loadTimelogs(projectId: string): Promise<ApiRows<HoursRow>> {
  * ZohoProjects.timesheets.READ) with view_type=projectspan, so every log
  * entry in the project's life is read and summed under the person who
  * actually logged it, per task. Billable and non-billable entries both count.
+ * Zoho's docs list `module` as required, so the first attempt passes
+ * module={type:'task'} (the same call the ?debug=timelogs probe makes);
+ * if Zoho rejects that, the call is retried without a module filter.
  *
  * Fallbacks, in order, so the Finance tab never goes blank while the new
  * scope is being added to the Self Client:
@@ -92,7 +148,15 @@ async function loadTimelogs(projectId: string): Promise<ApiRows<HoursRow>> {
 export async function loadProjectHours(projectId: string): Promise<ApiRows<HoursRow>> {
   if (!zohoReady()) return { rows: sampleHours(projectId), source: 'sample', exact: false };
   try {
-    return await cached(`zoho:${portalId()}:timelogs:${projectId}`, () => loadTimelogs(projectId));
+    return await cached(`zoho:${portalId()}:timelogs:${projectId}`, async () => {
+      try {
+        return await readTimelogs(projectId, { module: JSON.stringify({ type: 'task' }) });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (/403|insufficient|scope|permission|not authorized|unauthorised/i.test(msg)) throw err;
+        return readTimelogs(projectId, {});
+      }
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (/403|insufficient|scope|permission|not authorized|unauthorised/i.test(msg)) {
