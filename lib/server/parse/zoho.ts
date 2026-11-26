@@ -15,14 +15,7 @@ function rootOf(answer: Any): Any {
   if (answer && answer.status && answer.status !== 'success' && !answer.data) throw new Error(JSON.stringify(answer).slice(0, 300));
   return answer && answer.data ? answer.data : answer;
 }
-/** More pages to read? Uses page_info when Zoho sends it; for a plain list, a full page means there may be more. */
-export const hasNextPage = (answer: Any, perPage = 200): boolean => {
-  const r = rootOf(answer);
-  if (Array.isArray(r)) return r.length >= perPage;
-  return !!(r && r.page_info && r.page_info.has_next_page);
-};
-/** Tasks of an answer: Zoho V3 may answer { tasks: [...] } or a plain list (as it does for projects). */
-const tasksOf = (root: Any): Any[] => (Array.isArray(root) ? root : (root && root.tasks) || []);
+export const hasNextPage = (answer: Any): boolean => { const r = rootOf(answer); return !!(r && r.page_info && r.page_info.has_next_page); };
 
 export function parseProjects(answer: Any): ProjectRow[] {
   const root = rootOf(answer);
@@ -43,7 +36,7 @@ export function parseProjects(answer: Any): ProjectRow[] {
 
 export function parseTasks(answer: Any): TaskRow[] {
   const root = rootOf(answer);
-  const list: Any[] = tasksOf(root);
+  const list: Any[] = (root && root.tasks) || [];
   return list.map((t) => {
     const owners = ((t.owners_and_work && t.owners_and_work.owners) || []).map((o: Any) => o.name).filter((n: string) => n && n !== 'Unassigned User');
     return {
@@ -65,11 +58,63 @@ export function parseTasks(answer: Any): TaskRow[] {
 /** "12:30" -> 12.5 hours. */
 const hrs = (s: unknown) => { if (!s) return 0; const m = String(s).match(/^(\d+):(\d+)$/); return m ? Number(m[1]) + Number(m[2]) / 60 : Number(s) || 0; };
 
-/** One row per owner of each task with logged hours, each owner getting an even share. */
+/**
+ * Exact hours from Zoho Projects Bulk Time Logs (V3):
+ * GET /portal/{portal}/projects/{project}/timelogs?view_type=projectspan
+ * Response: { time_logs: [{ date, log_details: [{ owner, module_detail,
+ * log_hour: "HH:MM", billing_status, project }, ...] }], page_info }.
+ * One row per (task, person who actually logged time), hours summed from
+ * that person's own log entries — never split between task owners.
+ */
+export function parseTimelogs(answer: Any | Any[]): HoursRow[] {
+  // Accept one page's answer, or several pages: aggregation is across all
+  // pages, so a person with entries on two pages still gets one row.
+  const answers: Any[] = Array.isArray(answer) ? answer : [answer];
+  const groups: Any[] = answers.flatMap((a) => { const r = rootOf(a); return (r && r.time_logs) || []; });
+  // Aggregate per (task, person) first, so several entries on one task by
+  // the same person become a single row with the exact summed hours.
+  const byTaskPerson = new Map<string, { project_id: string; task_id: string; task: string; person: string; hours: number; entries: number }>();
+  const taskTotals = new Map<string, { hours: number; people: Set<string> }>();
+  groups.forEach((g: Any) => {
+    ((g && g.log_details) || []).forEach((d: Any) => {
+      const h = hrs(d && d.log_hour);
+      if (!h) return;
+      const owner = (d && d.owner) || {};
+      const person = [owner.first_name, owner.last_name].filter(Boolean).join(' ') || owner.name || owner.email || 'Unassigned';
+      const mod = (d && d.module_detail) || {};
+      const type = mod.type || d.type || 'task';
+      const taskId = String(mod.id || 'general');
+      const taskName = decode(mod.name || (type === 'general' ? 'General log' : type === 'issue' || type === 'bug' ? 'Issue log' : ''));
+      const projectId = String((d && d.project && d.project.id) || '');
+      const key = taskId + '|' + person;
+      const e = byTaskPerson.get(key) || { project_id: projectId, task_id: taskId, task: taskName, person, hours: 0, entries: 0 };
+      e.hours += h; e.entries += 1;
+      byTaskPerson.set(key, e);
+      const t = taskTotals.get(taskId) || { hours: 0, people: new Set<string>() };
+      t.hours += h; t.people.add(person);
+      taskTotals.set(taskId, t);
+    });
+  });
+  return [...byTaskPerson.values()].map((e) => {
+    const t = taskTotals.get(e.task_id)!;
+    return {
+      project_id: e.project_id, task_id: e.task_id, task: e.task, person: e.person,
+      owners: t.people.size, task_hours: Math.round(t.hours * 100) / 100,
+      hours: Math.round(e.hours * 100) / 100, entries: e.entries,
+    };
+  });
+}
+
+/**
+ * Fallback, kept only while the Zoho token lacks the timesheets scope:
+ * one row per owner of each task with logged hours, each owner getting an
+ * even share of the task's total. This is an ESTIMATE, not a timesheet
+ * record — the task's owners are not necessarily the people who logged time.
+ */
 export function parseHours(answer: Any): HoursRow[] {
   const root = rootOf(answer);
   const rows: HoursRow[] = [];
-  tasksOf(root).forEach((t: Any) => {
+  ((root && root.tasks) || []).forEach((t: Any) => {
     const total = hrs(t.log_hours && t.log_hours.total_hours);
     if (!total) return;
     const owners = ((t.owners_and_work && t.owners_and_work.owners) || []).filter((o: Any) => o && o.name !== 'Unassigned User');
@@ -82,7 +127,7 @@ export function parseHours(answer: Any): HoursRow[] {
 /** Phase ids and names used by the tasks in an answer (milestone "None" is skipped). */
 export function phaseIdsOf(answer: Any, into: Map<string, string>) {
   const root = rootOf(answer);
-  tasksOf(root).forEach((t: Any) => { const m = t.milestone; if (m && m.id && m.name && m.name !== 'None') into.set(String(m.id), decode(m.name)); });
+  ((root && root.tasks) || []).forEach((t: Any) => { const m = t.milestone; if (m && m.id && m.name && m.name !== 'None') into.set(String(m.id), decode(m.name)); });
 }
 
 export function parsePhase(answer: Any, fallbackName: string, projectId: string): PhaseRow | null {
