@@ -15,7 +15,14 @@ function rootOf(answer: Any): Any {
   if (answer && answer.status && answer.status !== 'success' && !answer.data) throw new Error(JSON.stringify(answer).slice(0, 300));
   return answer && answer.data ? answer.data : answer;
 }
-export const hasNextPage = (answer: Any): boolean => { const r = rootOf(answer); return !!(r && r.page_info && r.page_info.has_next_page); };
+/** More pages to read? Uses page_info when Zoho sends it; for a plain list, a full page means there may be more. */
+export const hasNextPage = (answer: Any, perPage = 200): boolean => {
+  const r = rootOf(answer);
+  if (Array.isArray(r)) return r.length >= perPage;
+  return !!(r && r.page_info && r.page_info.has_next_page);
+};
+/** Tasks of an answer: Zoho V3 may answer { tasks: [...] } or a plain list (as it does for projects). */
+const tasksOf = (root: Any): Any[] => (Array.isArray(root) ? root : (root && root.tasks) || []);
 
 export function parseProjects(answer: Any): ProjectRow[] {
   const root = rootOf(answer);
@@ -36,7 +43,7 @@ export function parseProjects(answer: Any): ProjectRow[] {
 
 export function parseTasks(answer: Any): TaskRow[] {
   const root = rootOf(answer);
-  const list: Any[] = (root && root.tasks) || [];
+  const list: Any[] = tasksOf(root);
   return list.map((t) => {
     const owners = ((t.owners_and_work && t.owners_and_work.owners) || []).map((o: Any) => o.name).filter((n: string) => n && n !== 'Unassigned User');
     return {
@@ -62,7 +69,7 @@ const hrs = (s: unknown) => { if (!s) return 0; const m = String(s).match(/^(\d+
 export function parseHours(answer: Any): HoursRow[] {
   const root = rootOf(answer);
   const rows: HoursRow[] = [];
-  ((root && root.tasks) || []).forEach((t: Any) => {
+  tasksOf(root).forEach((t: Any) => {
     const total = hrs(t.log_hours && t.log_hours.total_hours);
     if (!total) return;
     const owners = ((t.owners_and_work && t.owners_and_work.owners) || []).filter((o: Any) => o && o.name !== 'Unassigned User');
@@ -75,7 +82,7 @@ export function parseHours(answer: Any): HoursRow[] {
 /** Phase ids and names used by the tasks in an answer (milestone "None" is skipped). */
 export function phaseIdsOf(answer: Any, into: Map<string, string>) {
   const root = rootOf(answer);
-  ((root && root.tasks) || []).forEach((t: Any) => { const m = t.milestone; if (m && m.id && m.name && m.name !== 'None') into.set(String(m.id), decode(m.name)); });
+  tasksOf(root).forEach((t: Any) => { const m = t.milestone; if (m && m.id && m.name && m.name !== 'None') into.set(String(m.id), decode(m.name)); });
 }
 
 export function parsePhase(answer: Any, fallbackName: string, projectId: string): PhaseRow | null {
