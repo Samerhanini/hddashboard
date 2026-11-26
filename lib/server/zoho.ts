@@ -31,6 +31,8 @@ export function portalId(): string {
 
 /** Zoho Projects V3 base URL for our portal. */
 export const projectsBase = () => `${dc().projects}/api/v3/portal/${portalId()}`;
+/** Zoho Projects V2 ("restapi") base URL, used where V3 lacks an equivalent. */
+export const projectsRestBase = () => `${dc().projects}/restapi/portal/${portalId()}`;
 
 interface Token { value: string; expiresAt: number; apiDomain: string }
 let token: Token | null = null;

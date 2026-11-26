@@ -3,7 +3,7 @@ import { sampleProjects } from '../fixtures/projects';
 import { sampleHours, sampleProjectData } from '../fixtures/tasks';
 import { cached } from './cache';
 import { hasNextPage, parseHours, parsePhase, parseProjects, parseTasks, phaseIdsOf } from './parse/zoho';
-import { mapLimit, portalId, projectsBase, zohoGet, zohoReady } from './zoho';
+import { mapLimit, portalId, projectsBase, projectsRestBase, zohoGet, zohoReady } from './zoho';
 
 // Zoho Projects loaders (datasets.json -> projects, projectTasks, projectHours, projectPhases).
 // Sample rows while the Zoho credentials aren't set; live Zoho Projects V3 calls once they are.
@@ -84,6 +84,31 @@ export async function debugProjectHours(projectId: string) {
     first_page_info: (() => { const p: any = pages[0]; const r = p && p.data ? p.data : p; return r && !Array.isArray(r) ? r.page_info || null : '(plain list, no page_info)'; })(),
   };
   /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
+/**
+ * Diagnostic for switching the hours card to real time logs (who logged each hour). Tries the likely
+ * Zoho time-log endpoints and shows each raw answer, trimmed. Needs the ZohoProjects.timesheets.READ scope.
+ */
+export async function debugTimelogs(projectId: string) {
+  const d = new Date();
+  const mmddyyyy = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${d.getFullYear()}`;
+  const attempts: { name: string; url: string; params: Record<string, string | number> }[] = [
+    { name: 'v3 timelogs (task, projectspan)', url: `${projectsBase()}/projects/${projectId}/timelogs`, params: { module: JSON.stringify({ type: 'task' }), view_type: 'projectspan', page: 1, per_page: 50 } },
+    { name: 'v3 timelogs (task)', url: `${projectsBase()}/projects/${projectId}/timelogs`, params: { module: JSON.stringify({ type: 'task' }), page: 1, per_page: 50 } },
+    { name: 'v2 logs (month)', url: `${projectsRestBase()}/projects/${projectId}/logs/`, params: { users_list: 'all', view_type: 'month', date: mmddyyyy, bill_status: 'All', component_type: 'task' } },
+    { name: 'v2 logs (custom range)', url: `${projectsRestBase()}/projects/${projectId}/logs/`, params: { users_list: 'all', view_type: 'custom_date', custom_date: JSON.stringify({ start_date: '01-01-2015', end_date: mmddyyyy }), bill_status: 'All', component_type: 'task' } },
+  ];
+  const results = [];
+  for (const a of attempts) {
+    try {
+      const ans = await zohoGet(a.url, a.params);
+      results.push({ attempt: a.name, ok: true, answer_start: JSON.stringify(ans).slice(0, 2500) });
+    } catch (err) {
+      results.push({ attempt: a.name, ok: false, error: String(err instanceof Error ? err.message : err).slice(0, 500) });
+    }
+  }
+  return results;
 }
 
 /** Logged hours per task owner (all tasks), each owner getting an even share of a task's hours. */
