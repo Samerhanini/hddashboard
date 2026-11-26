@@ -1,7 +1,7 @@
-import type { AgendaNoteRow, ApiRows, CrmContactRow, MeetingRow } from '../types';
-import { sampleAgendaNotes, sampleCrmContacts, sampleMeetings } from '../fixtures/people';
+import type { AgendaNoteRow, ApiRows, MeetingRow } from '../types';
+import { sampleAgendaNotes, sampleMeetings } from '../fixtures/people';
 
-// Google Drive (meetings), Google Sheets Agenda tab (agendaNotes) and Zoho CRM (crmContacts).
+// Google Drive (meetings) and the Google Sheets Agenda tab (agendaNotes).
 // Sample rows until the credentials are set; the live calls are added in stage 5.
 
 /** Gemini notes whose title contains the building key, newest first (50 max, like the original). */
@@ -16,14 +16,4 @@ export async function loadMeetings(bldg: string): Promise<ApiRows<MeetingRow>> {
 
 export async function loadAgendaNotes(): Promise<ApiRows<AgendaNoteRow>> {
   return { rows: sampleAgendaNotes(), source: 'sample' };
-}
-
-/** Zoho CRM contacts matching a name, company or email (20 max). */
-export async function searchCrmContacts(q: string): Promise<ApiRows<CrmContactRow>> {
-  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
-  const rows = sampleCrmContacts.filter((c) => {
-    const hay = [c.name, c.company, c.email, c.title].join(' ').toLowerCase();
-    return words.every((w) => hay.includes(w));
-  });
-  return { rows: rows.slice(0, 20), truncated: rows.length > 20, source: 'sample' };
 }

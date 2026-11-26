@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { searchCrmContacts } from '@/lib/server/google';
+import { searchCrmContacts } from '@/lib/server/zohoCrm';
 import { badInput, rowsResponse } from '@/lib/server/respond';
 import { isValid } from '@/lib/validate';
 
