@@ -58,6 +58,34 @@ function allTaskPages(projectId: string): Promise<{ pages: unknown[]; truncated:
   });
 }
 
+/**
+ * Diagnostic for the hours card: how many tasks Zoho returned per page, which statuses and depths they
+ * have, and the raw logged-hours fields of a few tasks. Contains project data only, never credentials.
+ */
+export async function debugProjectHours(projectId: string) {
+  const { pages, truncated } = await allTaskPages(projectId);
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const tasksOf = (a: any): any[] => { const r = a && a.data ? a.data : a; return Array.isArray(r) ? r : (r && r.tasks) || []; };
+  const all = pages.flatMap(tasksOf);
+  const count = (f: (t: any) => string) => all.reduce((m: Record<string, number>, t) => { const k = f(t); m[k] = (m[k] || 0) + 1; return m; }, {});
+  const withHours = all.filter((t) => t.log_hours && Object.values(t.log_hours).some((v) => v && v !== '0' && v !== '0:00' && v !== '00:00'));
+  const pick = (t: any) => ({ id: t.id, name: t.name, status: t.status && t.status.name, depth: t.depth, owners: ((t.owners_and_work && t.owners_and_work.owners) || []).map((o: any) => o.name), log_hours: t.log_hours, other_hour_fields: Object.fromEntries(Object.entries(t).filter(([k]) => /hour|log|work|duration/i.test(k) && k !== 'log_hours' && k !== 'owners_and_work')) });
+  return {
+    pages_read: pages.length,
+    tasks_per_page: pages.map((p) => tasksOf(p).length),
+    more_pages_not_read: truncated,
+    total_tasks: all.length,
+    tasks_by_status: count((t) => (t.status && t.status.name) || '(none)'),
+    tasks_by_depth: count((t) => String(t.depth ?? '(none)')),
+    tasks_with_logged_hours: withHours.length,
+    field_names_on_a_task: all[0] ? Object.keys(all[0]).sort() : [],
+    examples_with_hours: withHours.slice(0, 5).map(pick),
+    example_without_hours: all.find((t) => !withHours.includes(t)) ? pick(all.find((t) => !withHours.includes(t))) : null,
+    first_page_info: (() => { const p: any = pages[0]; const r = p && p.data ? p.data : p; return r && !Array.isArray(r) ? r.page_info || null : '(plain list, no page_info)'; })(),
+  };
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
 /** Logged hours per task owner (all tasks), each owner getting an even share of a task's hours. */
 export async function loadProjectHours(projectId: string): Promise<ApiRows<HoursRow>> {
   if (!zohoReady()) return { rows: sampleHours(projectId), source: 'sample' };
