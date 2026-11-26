@@ -39,7 +39,7 @@ After each step, run `npm run dev` and open http://localhost:3000 to check the r
 |---|---|---|
 | Google sign-in | console.cloud.google.com → APIs & Services → Credentials → OAuth client (Web) | Client ID and secret. Redirect URI: `http://localhost:3000/api/auth/callback/google`, plus your live URL later |
 | Google Sheets + Drive | Same project → enable the Sheets API and Drive API → create a **service account** → Keys → JSON | Paste the JSON into `GOOGLE_SERVICE_ACCOUNT_JSON`. **Share the roster sheet (Editor) and the Gemini notes (Viewer) with the service account's email** |
-| Zoho Projects + CRM | api-console.zoho.com → Self Client → generate a code with scopes `ZohoProjects.portals.READ,ZohoProjects.projects.READ,ZohoProjects.tasks.READ,ZohoProjects.milestones.READ,ZohoCRM.modules.contacts.READ`, then exchange it for a refresh token | Client ID, secret and refresh token. Claude Code can walk you through the exchange |
+| Zoho Projects + CRM | api-console.zoho.com → Self Client → generate a code with scopes `ZohoProjects.portals.READ,ZohoProjects.projects.READ,ZohoProjects.tasks.READ,ZohoProjects.milestones.READ,ZohoProjects.timesheets.READ,ZohoCRM.modules.contacts.READ`, then exchange it for a refresh token | Client ID, secret and refresh token. Claude Code can walk you through the exchange |
 | QuickBooks | developer.intuit.com → create an app (Accounting scope) → use the OAuth Playground to connect UrbanCore Builders LLC | Client ID, secret, refresh token and Realm (company) ID |
 | AppFolio | Export the reports again, or reuse the Nov 17 snapshot | Save them as `data/appfolio_spend.json` and `data/appfolio_loans.json` |
 
