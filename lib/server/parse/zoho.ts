@@ -19,7 +19,7 @@ export const hasNextPage = (answer: Any): boolean => { const r = rootOf(answer);
 
 export function parseProjects(answer: Any): ProjectRow[] {
   const root = rootOf(answer);
-  const list: Any[] = (root && (root.result || root.projects)) || [];
+  const list: Any[] = Array.isArray(root) ? root : (root && (root.result || root.projects)) || [];
   return list.map((p) => ({
     id: String(p.id),
     name: decode(p.name),
