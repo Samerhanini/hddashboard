@@ -9,11 +9,15 @@ import { hasEnv } from './env';
 const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 const DEFAULT_SPREADSHEET_ID = '1h-64cziAfN6mlFV0nv_2m_DoNnB2BoUqiKVobIkWqQI';
+/** Project Roles Matrix sheet (holds the "Project" tab with per-project overrides). */
+const MATRIX_SPREADSHEET_ID = '1UYTc4oaOUQYIeLAADJpOSRqazCxQoCpqcCXIHG9rFsY';
 const DEFAULT_TOKEN_URI = 'https://oauth2.googleapis.com/token';
 
 export const sheetsReady = () => hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON');
 export const rosterSpreadsheetId = () => (process.env.ROSTER_SPREADSHEET_ID || DEFAULT_SPREADSHEET_ID).trim();
 export const rosterTab = () => (process.env.ROSTER_SHEET_TAB || 'Roster').trim();
+export const matrixSpreadsheetId = () => (process.env.MATRIX_SPREADSHEET_ID || MATRIX_SPREADSHEET_ID).trim();
+export const matrixTab = () => (process.env.MATRIX_PROJECT_TAB || 'Project').trim();
 export const rosterTabId = () => {
   const n = parseInt(process.env.ROSTER_SHEET_TAB_ID || '401964840', 10);
   return isNaN(n) ? 401964840 : n;
@@ -83,9 +87,9 @@ async function accessToken(): Promise<string> {
   return tokenCache.token;
 }
 
-async function sheetsFetch(path: string, init?: RequestInit): Promise<Record<string, unknown>> {
+async function sheetsFetchFor(spreadsheetId: string, path: string, init?: RequestInit): Promise<Record<string, unknown>> {
   const token = await accessToken();
-  const res = await fetch(`${SHEETS_API}/${rosterSpreadsheetId()}${path}`, {
+  const res = await fetch(`${SHEETS_API}/${spreadsheetId}${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(init?.headers || {}) },
   });
@@ -97,9 +101,21 @@ async function sheetsFetch(path: string, init?: RequestInit): Promise<Record<str
   return body;
 }
 
+async function sheetsFetch(path: string, init?: RequestInit): Promise<Record<string, unknown>> {
+  return sheetsFetchFor(rosterSpreadsheetId(), path, init);
+}
+
 /** Values of a range as rows of cell strings (missing cells are ''). */
 export async function sheetsValuesGet(range: string): Promise<unknown[][]> {
   const body = await sheetsFetch(`/values/${encodeURIComponent(range)}`);
+  const values = body.values;
+  if (!Array.isArray(values)) return [];
+  return values.map((r) => (Array.isArray(r) ? r : []));
+}
+
+/** Values of a range in the Project Roles Matrix sheet (same service account). */
+export async function matrixValuesGet(range: string): Promise<unknown[][]> {
+  const body = await sheetsFetchFor(matrixSpreadsheetId(), `/values/${encodeURIComponent(range)}`);
   const values = body.values;
   if (!Array.isArray(values)) return [];
   return values.map((r) => (Array.isArray(r) ? r : []));
