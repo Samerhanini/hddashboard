@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DEPTS, VIEWS, type Dept, type ProjectRow, type View } from '@/lib/types';
-import { bldgOf, deptProjects, firstProject } from '@/lib/rules';
+import { bldgOf, clientMatches, deptProjects, firstProject } from '@/lib/rules';
 import { useDataset } from '@/lib/useDataset';
 import { DashboardContext, type DashboardState } from './DashboardContext';
 import DeptTabs from './DeptTabs';
@@ -33,6 +33,7 @@ export default function Dashboard() {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [hidden, setHiddenSet] = useState<Set<string>>(() => new Set());
   const [showHidden, setShowHidden] = useState(false);
+  const [client, setClient] = useState<string | null>(null);
 
   // Browser-only state is read after mount so the server render and first client render agree.
   useEffect(() => {
@@ -49,13 +50,16 @@ export default function Dashboard() {
 
   const rows = projects.data;
 
-  // ptKeepProjectInDept: keep the selected project inside the current department.
+  // ptKeepProjectInDept: keep the selected project inside the current department (and client filter).
   useEffect(() => {
     if (projects.status !== 'ok') return;
-    const list = deptProjects(rows, dept, hidden, 'all');
+    const list = deptProjects(rows, dept, hidden, 'all').filter((p) => clientMatches(p, client));
     if (!list.length) { if (projectId !== null) setProjectId(null); return; }
-    if (!projectId || !list.some((p) => p.id === projectId)) setProjectId(firstProject(rows, dept, hidden) || list[0].id);
-  }, [projects.status, rows, dept, hidden, projectId]);
+    if (!projectId || !list.some((p) => p.id === projectId)) {
+      const first = list.find((p) => !hidden.has(p.id)) || list[0];
+      setProjectId(first.id);
+    }
+  }, [projects.status, rows, dept, hidden, projectId, client]);
 
   const project = useMemo(() => rows.find((p) => p.id === projectId) || null, [rows, projectId]);
 
@@ -84,15 +88,15 @@ export default function Dashboard() {
     setHiddenSet(nextHidden);
     try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...nextHidden])); } catch { /* storage blocked */ }
     if (hide && id === projectId) {
-      const vis = deptProjects(rows, dept, nextHidden, 'visible');
+      const vis = deptProjects(rows, dept, nextHidden, 'visible').filter((p) => clientMatches(p, client));
       if (vis.length) setProjectId(vis[0].id);
     }
-  }, [rows, dept, projectId, hidden]);
+  }, [rows, dept, projectId, hidden, client]);
 
   const state: DashboardState = {
-    dept, view, projectId, project, projects, hidden, showHidden,
+    dept, view, projectId, project, projects, hidden, showHidden, client,
     bldg: project ? bldgOf(project.name) : null,
-    selectDept, selectProject, selectView, setHidden,
+    selectDept, selectProject, selectView, setHidden, setClient,
     toggleShowHidden: () => { setShowHidden((s) => !s); },
   };
 
