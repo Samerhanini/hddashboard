@@ -223,3 +223,18 @@ body{margin:0;background:var(--color-bg);padding:24px}
   .pt-sidebar .pt-tabs{flex-direction:row;flex-wrap:wrap}
   .pt-sidebar .pt-depts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,220px))}
 }
+
+/* ---- userbar in the sidebar + tighter top so the view buttons sit higher (Nov 27, 2026) ---- */
+body{padding:12px 24px 24px}
+.pt-sidebar .pt-userbar{display:block;margin:0}
+.pt-sidebar .pt-userbar span{display:block;margin-bottom:6px}
+/* ---- Client hover accordion: collapsed until hover/focus (Nov 27, 2026) ---- */
+.pt-sidebar .pt-clients-wrap .pt-side-label{display:flex;align-items:center}
+.pt-caret{display:inline-block;width:0;height:0;margin-left:6px;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;transition:transform .2s ease}
+.pt-clients-wrap:hover .pt-caret{transform:rotate(180deg)}
+.pt-clients-wrap .pt-tabs{max-height:0;overflow:hidden;opacity:0;visibility:hidden;transition:max-height .25s ease,opacity .2s ease,visibility 0s linear .25s}
+.pt-clients-wrap:hover .pt-tabs,.pt-clients-wrap:focus-within .pt-tabs{max-height:320px;opacity:1;visibility:visible;transition:max-height .25s ease,opacity .2s ease,visibility 0s}
+@media (max-width:760px){
+  .pt-clients-wrap .pt-tabs{max-height:none;opacity:1;visibility:visible}
+  .pt-clients-wrap .pt-caret{display:none}
+}
