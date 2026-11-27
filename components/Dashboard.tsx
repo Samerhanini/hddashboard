@@ -103,12 +103,18 @@ export default function Dashboard() {
     <DashboardContext.Provider value={state}>
       <div className="pt-wrap">
         <ViewNav />
-        <DeptTabs />
-        {projects.source === 'sample' && (
-          <p className="pt-notice">Showing sample data. Live Zoho projects appear once the Zoho credentials are set.</p>
-        )}
-        <ProjectBrowser />
-        <ViewSections />
+        <div className="pt-body">
+          <aside className="pt-sidebar">
+            <DeptTabs />
+          </aside>
+          <div className="pt-main">
+            {projects.source === 'sample' && (
+              <p className="pt-notice">Showing sample data. Live Zoho projects appear once the Zoho credentials are set.</p>
+            )}
+            <ProjectBrowser />
+            <ViewSections />
+          </div>
+        </div>
       </div>
     </DashboardContext.Provider>
   );
