@@ -8,6 +8,8 @@ export const COLORS = ['#2f6fbd', '#d9822b', '#3d9970', '#a44a8f', '#c9a227', '#
 
 /** ptInDept: a project belongs to a department by its name prefix (HD..., UC..., BS...). */
 export function inDept(name: string, dept: string): boolean {
+  const o = deptOf(name);
+  if (o) return o === dept;
   return String(name || '').toUpperCase().startsWith(dept);
 }
 
@@ -23,26 +25,58 @@ export function bldgOf(name: string): string {
   return v.length >= 2 ? v : 'none';
 }
 
+/** Tile display: project names longer than ~14 characters are shortened with an ellipsis (the full name stays in the tile's hover text). */
+export function shortName(name: string, max = 14): string {
+  const s = String(name || '');
+  return s.length > max ? s.slice(0, max) + '…' : s;
+}
+
 /** ptBadge: up to three letters/digits after the department prefix, for the tile badge. */
 export function projectBadge(name: string, dept: string): string {
-  let s = String(name || '').slice(dept.length).replace(/^[-\s]+/, '');
+  let s = String(name || '');
+  // Override-filed projects (e.g. HD111MAI-SCH under HDO) don't start with
+  // the department code, so strip the leading letters instead of slicing.
+  if (s.toUpperCase().startsWith(String(dept).toUpperCase())) s = s.slice(dept.length);
+  else s = s.replace(/^[A-Za-z]+/, '');
+  s = s.replace(/^[-\s]+/, '');
   s = s.replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase();
   return s || dept;
 }
 
-export type Which = 'visible' | 'hidden' | 'all';
+export type Which = 'visible' | 'hidden' | 'completed' | 'all';
+
+/** Projects filed under a different department than their name prefix (e.g. HD-AlHaffar lives under Hanini Consulting). Keyed by uppercased project name. */
+export const DEPT_OVERRIDES: Record<string, Dept> = {
+  'HD-ALHAFFAR': 'HC',
+  'HD111MAI-SCH': 'HDO',
+  'HDRUSTMALL-MAIN': 'HDO',
+  // BS - Opportunities: the 7 On Hold Brick Studios projects (Samer, Nov 27, 2026).
+  'BS8AHRAM-J01-CDS': 'BSO',
+  'BS46WKIN-J03-ENT': 'BSO',
+  'BS77UNIV-J03-INT': 'BSO',
+  'BS105W55-J01-CDS': 'BSO',
+  'BS153HAL-J00-CDS-BASE BUILDING': 'BSO',
+  'BS707BRO-J00-CDS-BASE BUILDING': 'BSO',
+  'BSTLEBRO-J01-CDS': 'BSO',
+};
+
+/** Department a project belongs to: an override first, else its name prefix. */
+export function deptOf(name: string): Dept | null {
+  const o = DEPT_OVERRIDES[String(name || '').toUpperCase()];
+  return o || null;
+}
 
 /** ptDeptProjects: projects of a department, excluding Completed/Cancelled, natural sort by name. */
-export function deptProjects(projects: ProjectRow[], dept: Dept, hidden: Set<string>, which: Which = 'visible'): ProjectRow[] {
+export function deptProjects(projects: ProjectRow[], dept: Dept, hidden: Set<string>, which: Which = 'visible', completed: Set<string> = new Set()): ProjectRow[] {
   return projects
-    .filter((p) => inDept(p.name, dept) && p.status !== 'Completed' && p.status !== 'Cancelled' && (which === 'all' || (which === 'hidden') === hidden.has(p.id)))
+    .filter((p) => inDept(p.name, dept) && p.status !== 'Completed' && p.status !== 'Cancelled' && (which === 'all' ? true : which === 'hidden' ? hidden.has(p.id) : which === 'completed' ? completed.has(p.id) : !hidden.has(p.id) && !completed.has(p.id)))
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 }
 
 /** ptFirstProject: first visible project of a department, or the first one at all if every project is hidden. */
-export function firstProject(projects: ProjectRow[], dept: Dept, hidden: Set<string>): string | null {
-  const vis = deptProjects(projects, dept, hidden, 'visible');
-  const list = vis.length ? vis : deptProjects(projects, dept, hidden, 'all');
+export function firstProject(projects: ProjectRow[], dept: Dept, hidden: Set<string>, completed: Set<string> = new Set()): string | null {
+  const vis = deptProjects(projects, dept, hidden, 'visible', completed);
+  const list = vis.length ? vis : deptProjects(projects, dept, hidden, 'all', completed);
   return list.length ? list[0].id : null;
 }
 
