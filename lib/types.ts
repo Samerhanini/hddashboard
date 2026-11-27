@@ -1,8 +1,8 @@
 // Row shapes produced by the loaders in reference/data-loaders.js.
 // The UI code depends on these exact field names, so keep them in sync with the loaders.
 
-export type Dept = 'HD' | 'HDO' | 'UC' | 'BS' | 'BSO' | 'HC';
-export const DEPTS: Dept[] = ['HD', 'HDO', 'UC', 'BS', 'BSO', 'HC'];
+export type Dept = 'HD' | 'HDO' | 'UC' | 'BS' | 'BSO' | 'HC' | 'OPPs';
+export const DEPTS: Dept[] = ['HD', 'HDO', 'UC', 'BS', 'BSO', 'HC', 'OPPs'];
 export const DEPT_NAMES: Record<Dept, string> = {
   HD: 'HD - Active',
   HDO: 'HD - Opportunities',
@@ -10,9 +10,10 @@ export const DEPT_NAMES: Record<Dept, string> = {
   BS: 'BS - Active',
   BSO: 'BS - Opportunities',
   HC: 'Hanini Consulting',
+  OPPs: 'OPPs',
 };
 
-/** Department tab badge colors, by family: Hanini departments blue, Urban Core orange, Brick Studios burgundy. */
+/** Department tab badge colors, by family: Hanini departments blue, Urban Core orange, Brick Studios burgundy, OPPs green. */
 export const DEPT_COLORS: Record<Dept, string> = {
   HD: '#2f6fbd',
   HDO: '#2f6fbd',
@@ -20,7 +21,11 @@ export const DEPT_COLORS: Record<Dept, string> = {
   BS: '#800020',
   BSO: '#800020',
   HC: '#2f6fbd',
+  OPPs: '#3d9970',
 };
+
+/** Project Roles Matrix sheet (holds the roster and the Project tab with per-project overrides). */
+export const ROLES_MATRIX_URL = 'https://docs.google.com/spreadsheets/d/1UYTc4oaOUQYIeLAADJpOSRqazCxQoCpqcCXIHG9rFsY/';
 
 export type View = 'overview' | 'agenda' | 'schedule' | 'finance' | 'resources' | 'tasks' | 'meetings';
 export const VIEWS: View[] = ['overview', 'agenda', 'schedule', 'finance', 'resources', 'tasks', 'meetings'];
@@ -36,6 +41,12 @@ export interface ProjectRow {
   closed_tasks: number;
   start_date: string | null;
   end_date: string | null;
+  /**
+   * Effective department from the Project tab of the Roles Matrix sheet
+   * (the "New Department" column). When absent, the client derives the
+   * department from the project name (see rowDept in lib/rules.ts).
+   */
+  dept?: Dept;
 }
 
 export interface TaskRow {
