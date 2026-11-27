@@ -119,7 +119,7 @@ export default function OverviewView() {
   return (
     <section className="pt-card" id="project-overview">
       <h2 className="pt-h2">{project ? project.name + ' — team roles and responsibilities' : 'Team roles and responsibilities'}</h2>
-      <p className="pt-sub">Team roster from the Project Team Roster Google Sheet</p>
+      <p className="pt-sub">Team roster from the Project Team Roster Google Sheet{rs.source === 'sample' ? ' · sample data' : rs.source === 'live' ? ' · live' : ''}</p>
       <div className={rs.status === 'loading' ? 'dash-skeleton' : undefined} style={rs.status === 'loading' ? { minHeight: 160 } : undefined}>{body}</div>
       {edit && <EditPanel key={edit.row.id + edit.field} edit={edit} allRows={rs.data} onClose={() => setEdit(null)} onSaved={rs.refresh} />}
       {pickRow && <ContactPicker key={pickRow.id} row={pickRow} onClose={() => setPickRow(null)} onSaved={rs.refresh} />}
