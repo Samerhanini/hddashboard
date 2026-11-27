@@ -20,9 +20,13 @@ export interface ProjectOverride {
 const CACHE_KEY = 'sheets:matrix:project-overrides';
 const STATUSES = ['Active', 'On Hold', 'Completed', 'Cancelled'] as const;
 
-const DEPT_BY_NAME: Record<string, Dept> = Object.fromEntries(
-  Object.entries(DEPT_NAMES).map(([code, name]) => [name.toLowerCase(), code as Dept]),
-);
+const DEPT_BY_NAME: Record<string, Dept> = {
+  ...Object.fromEntries(
+    Object.entries(DEPT_NAMES).map(([code, name]) => [name.toLowerCase(), code as Dept]),
+  ),
+  // Old UC label — still accepted so any stale sheet value keeps working.
+  'urban core builders': 'UC',
+};
 
 function parseDept(v: string): Dept | undefined {
   const key = v.trim().toLowerCase();
