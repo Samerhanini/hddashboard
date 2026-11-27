@@ -4,6 +4,8 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Projects & Tasks · Hanini',
   description: 'Hanini projects, schedules, finance, meetings and weekly agendas.',
+  applicationName: 'hanini',
+  appleWebApp: { title: 'hanini' },
   robots: { index: false, follow: false },
 };
 
