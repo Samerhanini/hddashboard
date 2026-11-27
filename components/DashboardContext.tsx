@@ -15,18 +15,11 @@ export interface DashboardState {
   projects: DatasetState<ProjectRow>;
   hidden: Set<string>;
   showHidden: boolean;
-  /** Projects marked completed in this browser (like hidden, local only). */
-  completed: Set<string>;
-  showCompleted: boolean;
   selectDept: (d: Dept) => void;
   selectProject: (id: string) => void;
   selectView: (v: View) => void;
   setHidden: (id: string, hide: boolean) => void;
-  setCompleted: (id: string, done: boolean) => void;
-  /** Bring a project back to the active list (clears its hidden and completed marks). */
-  setActive: (id: string) => void;
   toggleShowHidden: () => void;
-  toggleShowCompleted: () => void;
 }
 
 export const DashboardContext = createContext<DashboardState | null>(null);
