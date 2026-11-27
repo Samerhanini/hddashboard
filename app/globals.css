@@ -138,7 +138,7 @@ body{margin:0;background:var(--color-bg);padding:24px}
 .pt-pick-item{display:flex;justify-content:space-between;align-items:center;gap:var(--cds-gap-md);border-top:1px solid var(--color-border-line);padding-top:6px}
 /* roster table (Overview) */
 .pt-roster{margin-bottom:8px}
-.pt-roster-table{table-layout:fixed;width:1020px;min-width:0}
+.pt-roster-table{table-layout:fixed;width:1080px;min-width:0}
 .pt-roster-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 .pt-roster-table td,.pt-roster-table th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:7px 8px !important;line-height:1.4}
 .pt-dot-cell .pt-pick-dot{margin-right:6px}
