@@ -6,7 +6,7 @@ export const DEPTS: Dept[] = ['HD', 'HDO', 'UC', 'BS', 'BSO', 'HC', 'OP'];
 export const DEPT_NAMES: Record<Dept, string> = {
   HD: 'HD - Active',
   HDO: 'HD - Opportunities',
-  UC: 'Urban Core Builders',
+  UC: 'UC - Active',
   BS: 'BS - Active',
   BSO: 'BS - Opportunities',
   HC: 'Hanini Consulting',
