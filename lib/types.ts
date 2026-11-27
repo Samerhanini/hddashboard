@@ -57,6 +57,8 @@ export interface HoursRow {
   /** Task (or bug / general log) the time was logged against. */
   task?: string;
   person: string;
+  /** Email of the person who logged the time (time logs only; used to match their billable rate). */
+  email?: string;
   /** Distinct people who logged time on this task (not the task's owners). */
   owners: number;
   task_hours: number;
@@ -71,6 +73,22 @@ export interface HoursByPersonRow {
   share: number;
   tasks: number;
   shared_tasks: number;
+  /** Billable rate per hour from Zoho (the project's invoice rate for this person), when known. */
+  rate_per_hour?: number;
+  /** hours × rate_per_hour, when the rate is known. */
+  cost?: number;
+}
+
+/**
+ * One project user's billable rate from Zoho Projects
+ * (GET /projects/{id}/users: `invoice`, falling back to `budget.rate_per_hour`).
+ * This is the BILLABLE rate — what the person's hour is billed at — not
+ * `budget.cost_per_hour`, the internal staff cost, which is never used here.
+ */
+export interface ProjectRateRow {
+  person: string;
+  email: string;
+  rate_per_hour: number;
 }
 
 export interface QbSalesRow {
@@ -176,4 +194,10 @@ export interface ApiRows<T> {
    * split evenly between its owners). Undefined for other datasets.
    */
   exact?: boolean;
+  /**
+   * Rates only: false when Zoho answered but the data isn't available — the
+   * token lacks the ZohoProjects.users.READ scope — so the UI shows hours
+   * without costs instead of an error. Absent (treated as true) otherwise.
+   */
+  available?: boolean;
 }
