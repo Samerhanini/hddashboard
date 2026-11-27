@@ -203,3 +203,23 @@ body{margin:0;background:var(--color-bg);padding:24px}
 .pt-signin-btn:hover{border-color:var(--color-fg-muted)}
 .pt-signin-error{margin:var(--cds-gap-sm) 0 0;font-size:var(--cds-font-size-caption);color:var(--color-bad);line-height:1.5}
 .pt-signin-note{margin:var(--cds-gap-md) 0 0}
+
+/* ---- left sidebar layout (Nov 27, 2026): clients + departments in a left rail; views stay a top row ---- */
+.pt-body{display:flex;align-items:flex-start;gap:var(--cds-gap-lg)}
+.pt-sidebar{position:sticky;top:var(--cds-gap-lg);width:224px;flex:none;display:flex;flex-direction:column;gap:var(--cds-gap-lg)}
+.pt-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--cds-gap-lg)}
+.pt-side-label{display:none;font-size:11px;font-weight:var(--cds-font-weight-medium);letter-spacing:.08em;text-transform:uppercase;color:var(--color-fg-muted);margin:0 0 var(--cds-gap-xs)}
+.pt-sidebar .pt-side-label{display:block}
+.pt-sidebar .pt-tabs{flex-direction:column;align-items:stretch;flex-wrap:nowrap;border-bottom:none;margin-top:0}
+.pt-sidebar .pt-tab{border:1px solid transparent;border-radius:var(--cds-radius);padding:6px 10px;text-align:left}
+.pt-sidebar .pt-tab.pt-tab-on{border-color:var(--color-fg);box-shadow:inset 0 0 0 1px var(--color-fg)}
+.pt-sidebar .pt-depts{display:flex;flex-direction:column}
+.pt-sidebar .pt-tab.pt-dept{width:100%}
+.pt-op-text{display:none}
+.pt-sidebar .pt-op-text{display:flex}
+@media (max-width:760px){
+  .pt-body{flex-direction:column}
+  .pt-sidebar{position:static;width:100%}
+  .pt-sidebar .pt-tabs{flex-direction:row;flex-wrap:wrap}
+  .pt-sidebar .pt-depts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,220px))}
+}
