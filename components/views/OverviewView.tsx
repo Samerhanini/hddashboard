@@ -116,10 +116,25 @@ export default function OverviewView() {
     );
   }
 
+  const printList = () => {
+    const root = document.getElementById('project-overview');
+    const details = root ? Array.from(root.querySelectorAll('details')) : [];
+    const closed = details.filter((d) => !d.open);
+    closed.forEach((d) => { d.open = true; });
+    const restore = () => { closed.forEach((d) => { d.open = false; }); window.removeEventListener('afterprint', restore); };
+    window.addEventListener('afterprint', restore);
+    window.print();
+  };
+
   return (
     <section className="pt-card" id="project-overview">
-      <h2 className="pt-h2">{project ? project.name + ' — team roles and responsibilities' : 'Team roles and responsibilities'}</h2>
-      <p className="pt-sub">Team roster from the Project Team Roster Google Sheet{rs.source === 'sample' ? ' · sample data' : rs.source === 'live' ? ' · live' : ''}</p>
+      <div className="pt-overview-head">
+        <div>
+          <h2 className="pt-h2">{project ? project.name + ' — team roles and responsibilities' : 'Team roles and responsibilities'}</h2>
+          <p className="pt-sub">Team roster from the Project Team Roster Google Sheet{rs.source === 'sample' ? ' · sample data' : rs.source === 'live' ? ' · live' : ''}</p>
+        </div>
+        <button type="button" className="pt-print-btn" onClick={printList}>Print contact list</button>
+      </div>
       <div className={rs.status === 'loading' ? 'dash-skeleton' : undefined} style={rs.status === 'loading' ? { minHeight: 160 } : undefined}>{body}</div>
       {edit && <EditPanel key={edit.row.id + edit.field} edit={edit} allRows={rs.data} onClose={() => setEdit(null)} onSaved={rs.refresh} />}
       {pickRow && <ContactPicker key={pickRow.id} row={pickRow} onClose={() => setPickRow(null)} onSaved={rs.refresh} />}
@@ -127,7 +142,7 @@ export default function OverviewView() {
   );
 }
 
-const COLS: [keyof RosterRow, string, string][] = [['role', 'Role', '160px'], ['level', 'Level', '72px'], ['contact', 'Name', '150px'], ['firm', 'Company', '150px'], ['contact_email', 'Email', '190px'], ['phone', 'Phone', '120px']];
+const COLS: [keyof RosterRow, string, string][] = [['role', 'Role', '180px'], ['level', 'Level', '80px'], ['contact', 'Name', '180px'], ['firm', 'Company', '180px'], ['contact_email', 'Email', '230px'], ['phone', 'Phone', '140px']];
 
 function RosterTable({ rows, onEdit, onPick, onRemove }: {
   rows: RosterRow[]; onEdit: (r: RosterRow, f: 'role' | 'level') => void; onPick: (r: RosterRow) => void; onRemove: (r: RosterRow) => void;
@@ -135,7 +150,7 @@ function RosterTable({ rows, onEdit, onPick, onRemove }: {
   return (
     <div className="pt-table-wrap pt-roster">
       <table className="pt-table pt-roster-table">
-        <colgroup>{COLS.map(([f, , w]) => <col key={f} style={{ width: w }} />)}<col style={{ width: 26 }} /></colgroup>
+        <colgroup>{COLS.map(([f, , w]) => <col key={f} style={{ width: w }} />)}<col style={{ width: 30 }} /></colgroup>
         <thead><tr>{COLS.map(([, l]) => <th key={l}>{l}</th>)}<th aria-label="Remove" /></tr></thead>
         <tbody>
           {rows.map((r) => (
