@@ -2,7 +2,7 @@
 // They accept the raw Zoho REST answer (or the connector's { data: ... } wrapper) and return the same row
 // shapes the original produced, so the UI code works unchanged.
 
-import type { CrmContactRow, HoursRow, PhaseRow, ProjectRow, TaskRow } from '../../types';
+import type { CrmContactRow, HoursRow, PhaseRow, ProjectRateRow, ProjectRow, TaskRow } from '../../types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Any = any;
@@ -80,7 +80,7 @@ export function parseTimelogs(answer: Any | Any[]): HoursRow[] {
   const groups: Any[] = answers.flatMap((a) => { const r = rootOf(a); return (r && r.time_logs) || []; });
   // Aggregate per (task, person) first, so several entries on one task by
   // the same person become a single row with the exact summed hours.
-  const byTaskPerson = new Map<string, { project_id: string; task_id: string; task: string; person: string; hours: number; entries: number }>();
+  const byTaskPerson = new Map<string, { project_id: string; task_id: string; task: string; person: string; email: string; hours: number; entries: number }>();
   const taskTotals = new Map<string, { hours: number; people: Set<string> }>();
   groups.forEach((g: Any) => {
     ((g && g.log_details) || []).forEach((d: Any) => {
@@ -94,7 +94,7 @@ export function parseTimelogs(answer: Any | Any[]): HoursRow[] {
       const taskName = decode(mod.name || (type === 'general' ? 'General log' : type === 'issue' || type === 'bug' ? 'Issue log' : ''));
       const projectId = String((d && d.project && d.project.id) || '');
       const key = taskId + '|' + person;
-      const e = byTaskPerson.get(key) || { project_id: projectId, task_id: taskId, task: taskName, person, hours: 0, entries: 0 };
+      const e = byTaskPerson.get(key) || { project_id: projectId, task_id: taskId, task: taskName, person, email: String(owner.email || ''), hours: 0, entries: 0 };
       e.hours += h; e.entries += 1;
       byTaskPerson.set(key, e);
       const t = taskTotals.get(taskId) || { hours: 0, people: new Set<string>() };
@@ -105,7 +105,7 @@ export function parseTimelogs(answer: Any | Any[]): HoursRow[] {
   return [...byTaskPerson.values()].map((e) => {
     const t = taskTotals.get(e.task_id)!;
     return {
-      project_id: e.project_id, task_id: e.task_id, task: e.task, person: e.person,
+      project_id: e.project_id, task_id: e.task_id, task: e.task, person: e.person, email: e.email || undefined,
       owners: t.people.size, task_hours: Math.round(t.hours * 100) / 100,
       hours: Math.round(e.hours * 100) / 100, entries: e.entries,
     };
@@ -129,6 +129,24 @@ export function parseHours(answer: Any): HoursRow[] {
     names.forEach((n) => rows.push({ project_id: String((t.project && t.project.id) || ''), task_id: String(t.id), person: n, owners: names.length, task_hours: Math.round(total * 100) / 100, hours: Math.round((total / names.length) * 100) / 100 }));
   });
   return rows;
+}
+
+/**
+ * Billable rates of a project's users, from Zoho Projects V3
+ * GET /portal/{portal}/projects/{project}/users (scope ZohoProjects.users.READ).
+ * Each user carries `invoice` — the billable rate per hour set for that user
+ * on this project — and `budget.rate_per_hour` (same billing rate).
+ * `budget.cost_per_hour` is the internal staff cost and is deliberately NOT
+ * read: the dashboard shows the billable number, never the staff cost.
+ */
+export function parseProjectUsers(answer: Any): ProjectRateRow[] {
+  const root = rootOf(answer);
+  const list: Any[] = Array.isArray(root) ? root : (root && root.users) || [];
+  return list.map((u: Any) => ({
+    person: decode(u.full_name || u.display_name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.name || ''),
+    email: String(u.email || ''),
+    rate_per_hour: Number(u.invoice ?? (u.budget && u.budget.rate_per_hour) ?? 0) || 0,
+  })).filter((r) => r.person);
 }
 
 /** Phase ids and names used by the tasks in an answer (milestone "None" is skipped). */
