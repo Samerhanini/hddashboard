@@ -2,6 +2,7 @@
 
 import { format } from 'd3';
 import { afMatch, COLORS, deptProjects, projectBadge, qbMatch, shortName } from '@/lib/rules';
+import { ROLES_MATRIX_URL } from '@/lib/types';
 import { useAfLoans, useAfSpend, useQbAr, useQbSales } from '@/lib/hooks';
 import type { ProjectRow } from '@/lib/types';
 import { useDashboard } from './DashboardContext';
@@ -65,6 +66,9 @@ export default function ProjectBrowser() {
         <button type="button" className="pt-hidden-btn" aria-pressed={showHidden} onClick={toggleShowHidden}>
           {showHidden ? 'Back to projects' : 'Hidden' + (hiddenCount ? ' (' + hiddenCount + ')' : '')}
         </button>
+        {dept === 'OPPs' && (
+          <a className="pt-hidden-btn" href={ROLES_MATRIX_URL} target="_blank" rel="noreferrer">Project Roles Matrix ↗</a>
+        )}
       </div>
       <div className={'pt-icons' + (projects.status === 'loading' ? ' dash-skeleton' : '')}>{body}</div>
     </section>
