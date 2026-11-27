@@ -137,25 +137,41 @@ body{margin:0;background:var(--color-bg);padding:24px}
 .pt-pick-list{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto}
 .pt-pick-item{display:flex;justify-content:space-between;align-items:center;gap:var(--cds-gap-md);border-top:1px solid var(--color-border-line);padding-top:6px}
 /* roster table (Overview) */
-.pt-roster{margin-bottom:2px}
-.pt-roster-table{table-layout:fixed;width:868px;min-width:0}
+.pt-roster{margin-bottom:8px}
+.pt-roster-table{table-layout:fixed;width:1020px;min-width:0}
 .pt-roster-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
-.pt-roster-table td,.pt-roster-table th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 4px !important;line-height:1.35}
+.pt-roster-table td,.pt-roster-table th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:7px 8px !important;line-height:1.4}
 .pt-dot-cell .pt-pick-dot{margin-right:6px}
 .pt-pick-dot{flex:none;width:12px;height:12px;padding:0;border:1.5px solid var(--color-fg-muted);border-radius:50%;background:transparent;cursor:pointer;vertical-align:middle}
 .pt-pick-dot:hover{border-color:var(--color-fg);background:var(--color-border-line)}
-.pt-tier1{overflow:hidden;margin-bottom:6px}
-.pt-tier1 .pt-area-sum{padding:6px var(--cds-pad-md)}
-.pt-tier1[open] > .pt-area-sum{border-bottom:1px solid var(--color-border-line);margin-bottom:var(--cds-gap-sm)}
+.pt-tier1{overflow:hidden;margin-bottom:14px}
+.pt-tier1 .pt-area-sum{padding:10px var(--cds-pad-md)}
+.pt-tier1[open] > .pt-area-sum{border-bottom:1px solid var(--color-border-line);margin-bottom:var(--cds-gap-md)}
 .pt-tier1 > .pt-area-sum:hover{filter:brightness(0.97)}
-.pt-tier1 .pt-area-body{padding:0 var(--cds-pad-sm) var(--cds-pad-sm)}
-.pt-tier2{display:flex;align-items:center;gap:6px;border-radius:4px;color:var(--color-fg-muted);text-transform:uppercase;letter-spacing:.04em;font-size:11px;margin:6px 0 2px;padding:2px 8px}
+.pt-tier1 .pt-area-body{padding:0 var(--cds-pad-md) var(--cds-pad-md)}
+.pt-tier2{display:flex;align-items:center;gap:6px;border-radius:4px;color:var(--color-fg-muted);text-transform:uppercase;letter-spacing:.04em;font-size:11px;margin:14px 0 6px;padding:4px 8px}
 .pt-tier2:first-child{margin-top:0}
-.pt-tier1 .pt-empty{padding:2px 8px;font-size:11px}
+.pt-tier1 .pt-empty{padding:6px 8px;font-size:11px}
 .pt-x-cell{text-align:right;padding-left:0 !important;overflow:visible !important}
 .pt-x-confirm{width:auto !important;padding:0 6px !important;color:var(--color-bad) !important;font-size:11px !important;white-space:nowrap}
 .pt-add-line{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;margin:0;font:inherit;font-size:12px;line-height:1;border:1px solid var(--color-border-line);border-radius:50%;background:transparent;color:var(--color-fg-muted);cursor:pointer}
 .pt-add-line:hover{color:var(--color-fg);border-color:var(--color-fg-muted)}
+/* roles header + print the contact list as a PDF */
+.pt-overview-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--cds-gap-md)}
+.pt-print-btn{flex:none;font:inherit;font-size:var(--cds-font-size-caption);font-weight:var(--cds-font-weight-medium);color:var(--color-fg);background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.pt-print-btn:hover{border-color:var(--color-fg-muted)}
+@media print{
+  body{background:#fff;padding:0}
+  body *{visibility:hidden}
+  #project-overview,#project-overview *{visibility:visible}
+  #project-overview{position:absolute;top:0;left:0;width:100%;border:none;padding:0}
+  .pt-print-btn,.pt-pick-dot,.pt-add-line,.pt-x-cell{display:none !important}
+  .pt-area-sum,.pt-tier2{background:none !important}
+  .pt-tier1{break-inside:avoid}
+  .pt-tier1 .pt-area-body{padding:0 0 8px}
+  .pt-roster-table{table-layout:auto;width:100%}
+  .pt-roster-table td,.pt-roster-table th{white-space:normal;overflow:visible}
+}
 /* hours (Finance) */
 .pt-hours-table{width:auto;min-width:520px}
 .pt-hbar{display:inline-block;height:8px;border-radius:2px;margin-right:8px;vertical-align:middle;opacity:.8}
