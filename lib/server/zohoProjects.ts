@@ -15,9 +15,11 @@ const OPEN_FILTER = JSON.stringify({ criteria: [{ field_name: 'status', criteria
 
 const byDue = (a: TaskRow, b: TaskRow) => (Date.parse(a.due || '') || Infinity) - (Date.parse(b.due || '') || Infinity);
 
+import { loadProjectOverrides } from './projectOverrides';
+
 export async function loadProjects(): Promise<ApiRows<ProjectRow>> {
   if (!zohoReady()) return { rows: sampleProjects, source: 'sample' };
-  return cached(`zoho:${portalId()}:projects`, async () => {
+  const out = await cached(`zoho:${portalId()}:projects`, async () => {
     const rows: ProjectRow[] = [];
     let page = 1, more = true;
     while (more && page <= 5) {
@@ -28,6 +30,18 @@ export async function loadProjects(): Promise<ApiRows<ProjectRow>> {
     }
     return { rows, truncated: more, source: 'live' as const };
   });
+  // Sheet overrides (Project tab "New Department" / "New Status") layer on
+  // top of the Zoho rows; a failed sheet read just means no overrides.
+  const overrides = await loadProjectOverrides();
+  if (!overrides.size) return out;
+  return {
+    ...out,
+    rows: out.rows.map((p) => {
+      const o = overrides.get(p.name.toUpperCase());
+      if (!o) return p;
+      return { ...p, dept: o.dept ?? p.dept, status: o.status ?? p.status };
+    }),
+  };
 }
 
 /** Open tasks of one project, soonest due first (first 200, like the original). */
