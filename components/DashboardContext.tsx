@@ -15,10 +15,13 @@ export interface DashboardState {
   projects: DatasetState<ProjectRow>;
   hidden: Set<string>;
   showHidden: boolean;
+  /** Client filter from the Project sheet's Client column (null = all clients). */
+  client: string | null;
   selectDept: (d: Dept) => void;
   selectProject: (id: string) => void;
   selectView: (v: View) => void;
   setHidden: (id: string, hide: boolean) => void;
+  setClient: (c: string | null) => void;
   toggleShowHidden: () => void;
 }
 
