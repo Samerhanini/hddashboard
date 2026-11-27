@@ -1,7 +1,7 @@
 'use client';
 
 import { format } from 'd3';
-import { afMatch, COLORS, deptProjects, projectBadge, qbMatch } from '@/lib/rules';
+import { afMatch, COLORS, deptProjects, projectBadge, qbMatch, shortName } from '@/lib/rules';
 import { useAfLoans, useAfSpend, useQbAr, useQbSales } from '@/lib/hooks';
 import type { ProjectRow } from '@/lib/types';
 import { useDashboard } from './DashboardContext';
@@ -10,31 +10,41 @@ const fmtNum = format(',');
 
 /** Project tiles with hide/unhide (projectIcons + hiddenToggle in the original). */
 export default function ProjectBrowser() {
-  const { dept, projects, projectId, hidden, showHidden, selectProject, setHidden, toggleShowHidden, hasFinance } = useDashboardWithFinance();
-  const hiddenCount = projects.status === 'ok' ? deptProjects(projects.data, dept, hidden, 'hidden').length : 0;
+  const { dept, projects, projectId, hidden, showHidden, completed, showCompleted, selectProject, setHidden, setCompleted, setActive, toggleShowHidden, toggleShowCompleted, hasFinance } = useDashboardWithFinance();
+  const hiddenCount = projects.status === 'ok' ? deptProjects(projects.data, dept, hidden, 'hidden', completed).length : 0;
+  const completedCount = projects.status === 'ok' ? deptProjects(projects.data, dept, hidden, 'completed', completed).length : 0;
 
   let body: React.ReactNode = null;
   if (projects.status === 'error') body = <div className="pt-empty">Failed to load</div>;
   else if (projects.status === 'ok') {
-    const list = deptProjects(projects.data, dept, hidden, showHidden ? 'hidden' : 'visible');
+    const list = deptProjects(projects.data, dept, hidden, showCompleted ? 'completed' : showHidden ? 'hidden' : 'visible', completed);
     if (!list.length) {
-      body = <div className="pt-empty">{showHidden ? `No hidden projects in ${dept}.` : `No projects to show in ${dept}.`}</div>;
+      body = <div className="pt-empty">{showCompleted ? `No completed projects in ${dept}.` : showHidden ? `No hidden projects in ${dept}.` : `No projects to show in ${dept}.`}</div>;
     } else {
       body = list.map((p, i) => {
         const on = p.id === projectId;
         const fin = hasFinance(p);
+        const done = completed.has(p.id);
         const cls = 'pt-icon' + (on ? ' pt-icon-on' : '') + (p.status === 'Active' || fin ? '' : ' pt-icon-dim') + (fin ? ' pt-icon-fin' : '');
         return (
           <div className="pt-icon-wrap" key={p.id}>
             <button type="button" className={cls} aria-pressed={on}
-              title={p.name + ' (' + p.status + ')' + (fin ? ' · has QuickBooks or AppFolio activity' : '')}
+              title={p.name + ' (' + p.status + ')' + (fin ? ' · has QuickBooks or AppFolio activity' : '') + (done ? ' · completed' : '')}
               onClick={() => selectProject(p.id)}>
               <span className="pt-icon-badge" style={{ background: COLORS[i % COLORS.length] }}>{projectBadge(p.name, dept)}</span>
               <span className="pt-icon-text">
-                <span className="pt-icon-name">{p.name}</span>
+                <span className="pt-icon-name">{shortName(p.name)}</span>
                 <span className="pt-icon-meta"><span>{fmtNum(p.open_tasks)}</span>{' open' + (p.status === 'Active' ? '' : ' · ' + p.status)}</span>
               </span>
             </button>
+            <button type="button" className="pt-icon-a"
+              title="Make active"
+              aria-label={'Make active: ' + p.name}
+              onClick={(ev) => { ev.stopPropagation(); setActive(p.id); }}>a</button>
+            <button type="button" className={'pt-icon-check' + (done ? ' pt-icon-check-on' : '')}
+              title={done ? 'Mark as not completed' : 'Mark as completed'}
+              aria-label={(done ? 'Mark as not completed: ' : 'Mark as completed: ') + p.name}
+              onClick={(ev) => { ev.stopPropagation(); setCompleted(p.id, !done); }}>✓</button>
             <button type="button" className="pt-icon-x"
               title={showHidden ? 'Show this project again' : 'Hide this project'}
               aria-label={(showHidden ? 'Unhide ' : 'Hide ') + p.name}
@@ -49,6 +59,9 @@ export default function ProjectBrowser() {
     <section id="project-browser">
       <div className="pt-proj-head">
         <h2 className="pt-h2">Projects</h2>
+        <button type="button" className="pt-hidden-btn" aria-pressed={showCompleted} onClick={toggleShowCompleted}>
+          {showCompleted ? 'Back to projects' : 'Completed' + (completedCount ? ' (' + completedCount + ')' : '')}
+        </button>
         <button type="button" className="pt-hidden-btn" aria-pressed={showHidden} onClick={toggleShowHidden}>
           {showHidden ? 'Back to projects' : 'Hidden' + (hiddenCount ? ' (' + hiddenCount + ')' : '')}
         </button>
