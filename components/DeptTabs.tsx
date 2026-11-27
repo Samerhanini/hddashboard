@@ -2,7 +2,7 @@
 
 import { format } from 'd3';
 import { DEPTS, DEPT_COLORS, DEPT_NAMES } from '@/lib/types';
-import { clientLabel, clientMatches, distinctClients, rowInDept } from '@/lib/rules';
+import { clientMatches, distinctClients, rowInDept } from '@/lib/rules';
 import { useDashboard } from './DashboardContext';
 
 const fmtNum = format(',');
@@ -38,7 +38,7 @@ export default function DeptTabs() {
             <button key={c} type="button" role="tab" aria-selected={client === c}
               className={'pt-tab pt-client' + (client === c ? ' pt-tab-on' : '')}
               title={c} onClick={() => setClient(client === c ? null : c)}>
-              {clientLabel(c, clients)}
+              {c}
             </button>
           ))}
         </div>
