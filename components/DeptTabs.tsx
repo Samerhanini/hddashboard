@@ -28,7 +28,9 @@ export default function DeptTabs() {
   return (
     <header id="overview">
       {clients.length > 0 && (
-        <div className="pt-tabs pt-clients" role="tablist" aria-label="Client">
+        <>
+          <div className="pt-side-label">Client</div>
+          <div className="pt-tabs pt-clients" role="tablist" aria-label="Client">
           <button key="all" type="button" role="tab" aria-selected={client === null}
             className={'pt-tab pt-client' + (client === null ? ' pt-tab-on' : '')}
             title="All clients" onClick={() => setClient(null)}>
@@ -42,7 +44,9 @@ export default function DeptTabs() {
             </button>
           ))}
         </div>
+        </>
       )}
+      <div className="pt-side-label">Departments</div>
       <div className="pt-tabs pt-depts" role="tablist" aria-label="Department">
         {DEPTS.map((d) => {
           const on = d === dept;
@@ -51,12 +55,10 @@ export default function DeptTabs() {
               className={'pt-tab pt-dept' + (on ? ' pt-tab-on' : '')}
               onClick={() => selectDept(d)}>
               <span className="pt-icon-badge pt-dept-badge" style={{ background: DEPT_COLORS[d] }}>{d}</span>
-              {d !== 'OP' && (
-                <span className="pt-icon-text">
-                  <span className="pt-icon-name">{DEPT_NAMES[d]}</span>
-                  <span className="pt-icon-meta">{countText(d)}</span>
-                </span>
-              )}
+              <span className={'pt-icon-text' + (d === 'OP' ? ' pt-op-text' : '')}>
+                <span className="pt-icon-name">{DEPT_NAMES[d]}</span>
+                <span className="pt-icon-meta">{countText(d)}</span>
+              </span>
             </button>
           );
         })}
