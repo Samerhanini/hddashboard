@@ -9,8 +9,8 @@ export const DEPT_NAMES: Record<Dept, string> = {
   BS: 'Brick Studios',
 };
 
-export type View = 'overview' | 'agenda' | 'schedule' | 'finance' | 'tasks' | 'meetings';
-export const VIEWS: View[] = ['overview', 'agenda', 'schedule', 'finance', 'tasks', 'meetings'];
+export type View = 'overview' | 'agenda' | 'schedule' | 'finance' | 'resources' | 'tasks' | 'meetings';
+export const VIEWS: View[] = ['overview', 'agenda', 'schedule', 'finance', 'resources', 'tasks', 'meetings'];
 
 export interface ProjectRow {
   id: string;
