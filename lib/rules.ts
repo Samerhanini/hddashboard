@@ -33,6 +33,11 @@ export function shortName(name: string, max = 14): string {
 
 /** ptBadge: up to three letters/digits after the department prefix, for the tile badge. */
 export function projectBadge(name: string, dept: string): string {
+  // OP tiles show the department letters (SM, HD, UC, ...) instead of "J26".
+  if (dept === 'OP') {
+    const parts = j26Parts(name);
+    if (parts) return parts.dept;
+  }
   let s = String(name || '');
   // Override-filed projects (e.g. HD111MAI-SCH under HDO) don't start with
   // the department code, so strip the leading letters instead of slicing.
@@ -74,6 +79,22 @@ export function rowDept(p: ProjectRow): Dept | null {
   return deptOf(p.name);
 }
 
+/** "SM-J26-Weekly Meeting Agenda" -> { dept: 'SM', label: 'Weekly Meeting Agenda' }; null when the name has no "-J26-". */
+export function j26Parts(name: string): { dept: string; label: string } | null {
+  const m = String(name || '').match(/^([A-Za-z]+)-J26-(.+)$/i);
+  if (!m) return null;
+  return { dept: m[1].toUpperCase(), label: m[2].trim() };
+}
+
+/** Tile title: OP projects show the text after J26 in full; everything else keeps the 14-character short name. */
+export function tileTitle(name: string, dept: string): string {
+  if (dept === 'OP') {
+    const parts = j26Parts(name);
+    if (parts && parts.label) return parts.label;
+  }
+  return shortName(name);
+}
+
 /** Home department of a project ignoring the J26 → OP rule: the department it came from (override, else name prefix; null when it has none). Used to color-code OP tiles. */
 export function homeDeptOf(name: string): Dept | null {
   const o = DEPT_OVERRIDES[String(name || '').toUpperCase()];
@@ -91,13 +112,6 @@ export function distinctClients(projects: ProjectRow[]): string[] {
 /** True when the row belongs to the selected client (null = all clients). */
 export function clientMatches(p: ProjectRow, client: string | null): boolean {
   return !client || (p.client || '').trim() === client;
-}
-
-/** Button label for a client: its first letter — or its first two letters when another client shares the first letter (HG vs Halray). */
-export function clientLabel(client: string, clients: string[]): string {
-  const first = client[0].toUpperCase();
-  const clash = clients.some((c) => c !== client && c[0].toUpperCase() === first);
-  return clash ? client.slice(0, 2).toUpperCase() : first;
 }
 
 /** ptInDept for a project row (honours the sheet override). */
