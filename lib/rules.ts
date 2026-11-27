@@ -60,16 +60,31 @@ export const DEPT_OVERRIDES: Record<string, Dept> = {
   'BSTLEBRO-J01-CDS': 'BSO',
 };
 
-/** Department a project belongs to: an override first, else its name prefix. */
+/** Department a project belongs to: an override first, then the J26 rule (all "-J26-" projects live under OPPs), else its name prefix. */
 export function deptOf(name: string): Dept | null {
   const o = DEPT_OVERRIDES[String(name || '').toUpperCase()];
-  return o || null;
+  if (o) return o;
+  if (String(name || '').toUpperCase().includes('-J26-')) return 'OPPs';
+  return null;
+}
+
+/** Effective department of a project row: the server-set override (from the Project sheet) wins, else the name rule. */
+export function rowDept(p: ProjectRow): Dept | null {
+  if (p.dept) return p.dept;
+  return deptOf(p.name);
+}
+
+/** ptInDept for a project row (honours the sheet override). */
+export function rowInDept(p: ProjectRow, dept: string): boolean {
+  const o = rowDept(p);
+  if (o) return o === dept;
+  return String(p.name || '').toUpperCase().startsWith(dept);
 }
 
 /** ptDeptProjects: projects of a department, excluding Completed/Cancelled, natural sort by name. */
 export function deptProjects(projects: ProjectRow[], dept: Dept, hidden: Set<string>, which: Which = 'visible', completed: Set<string> = new Set()): ProjectRow[] {
   return projects
-    .filter((p) => inDept(p.name, dept) && p.status !== 'Completed' && p.status !== 'Cancelled' && (which === 'all' ? true : which === 'hidden' ? hidden.has(p.id) : which === 'completed' ? completed.has(p.id) : !hidden.has(p.id) && !completed.has(p.id)))
+    .filter((p) => rowInDept(p, dept) && p.status !== 'Completed' && p.status !== 'Cancelled' && (which === 'all' ? true : which === 'hidden' ? hidden.has(p.id) : which === 'completed' ? completed.has(p.id) : !hidden.has(p.id) && !completed.has(p.id)))
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 }
 
