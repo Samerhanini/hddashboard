@@ -2,7 +2,7 @@
 
 import type {
   AgendaNoteRow, AppfolioLoanRow, AppfolioSpendRow, CrmContactRow, HoursRow, MeetingRow,
-  PhaseRow, QbArRow, QbSalesRow, RosterRow, TaskRow,
+  PhaseRow, ProjectRateRow, QbArRow, QbSalesRow, RosterRow, TaskRow,
 } from './types';
 import { useDataset } from './useDataset';
 import { RULES } from './validate';
@@ -21,6 +21,10 @@ export const useProjectPhases = (projectId: string | null) =>
 /** projectHours: logged hours per task owner on the selected project. */
 export const useProjectHours = (projectId: string | null) =>
   useDataset<HoursRow>(projectId ? `/api/projects/${projectId}/hours` : null);
+
+/** projectRates: billable rate per hour for each user on the selected project (Zoho Projects users). */
+export const useProjectRates = (projectId: string | null) =>
+  useDataset<ProjectRateRow>(projectId ? `/api/projects/${projectId}/rates` : null);
 
 export const useQbSales = (on = true) => useDataset<QbSalesRow>(on ? '/api/quickbooks/sales' : null);
 export const useQbAr = (on = true) => useDataset<QbArRow>(on ? '/api/quickbooks/ar' : null);
