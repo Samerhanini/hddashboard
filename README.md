@@ -23,7 +23,7 @@ Sign in when prompted. Claude Code reads `CLAUDE.md` on its own.
 ## 3. Build it in stages. Paste these prompts one at a time
 
 1. *"Read CLAUDE.md and everything in reference/. Then scaffold the Next.js app as described, with the page layout,
-   department tabs, project tiles and the six view buttons. Use fixture data shaped like data-loaders.js for now."*
+   department tabs, project tiles and the seven view buttons. Use fixture data shaped like data-loaders.js for now."*
 2. *"Port the Tasks view and the Schedule (Gantt) view using fixtures."*
 3. *"Port the Finance, Meetings, Agenda and Overview views using fixtures."*
 4. *"Add Google sign-in limited to @hanini.com."*

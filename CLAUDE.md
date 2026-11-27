@@ -5,7 +5,7 @@ Rebuild the "Projects & Tasks" dashboard (originally a claude.ai dashboard artif
 private website for Hanini staff. Same layout, views and behaviour; live data from our systems.
 
 Everything about the original is in `reference/`:
-- `reference/page.html` — markup (department tabs, project tiles, six views)
+- `reference/page.html` — markup (department tabs, project tiles, seven views)
 - `reference/styles.css` — styles (with approximate design tokens at the top)
 - `reference/ui.js` — all drawing/interaction logic (each `dash.draw(...)` block ≈ one React component)
 - `reference/data-loaders.js` — how each raw API answer becomes rows (the row shapes the UI expects)
