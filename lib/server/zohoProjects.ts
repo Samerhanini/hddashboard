@@ -37,7 +37,7 @@ export async function loadProjects(): Promise<ApiRows<ProjectRow>> {
   return {
     ...out,
     rows: out.rows.map((p) => {
-      const o = overrides.get(p.name.toUpperCase());
+      const o = overrides.get(p.name.trim().toUpperCase());
       if (!o) return p;
       return { ...p, dept: o.dept ?? p.dept, status: o.status ?? p.status, client: o.client ?? p.client };
     }),
