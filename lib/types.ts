@@ -47,6 +47,8 @@ export interface ProjectRow {
    * department from the project name (see rowDept in lib/rules.ts).
    */
   dept?: Dept;
+  /** Client from the Project tab of the Roles Matrix sheet (the "Client" column). */
+  client?: string;
 }
 
 export interface TaskRow {
