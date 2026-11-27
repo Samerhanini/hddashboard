@@ -73,7 +73,6 @@ export default function Dashboard() {
 
   const selectProject = useCallback((id: string) => {
     setProjectId(id);
-    document.getElementById('project-views')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   const selectView = useCallback((v: View) => {
@@ -103,12 +102,12 @@ export default function Dashboard() {
   return (
     <DashboardContext.Provider value={state}>
       <div className="pt-wrap">
+        <ViewNav />
         <DeptTabs />
         {projects.source === 'sample' && (
           <p className="pt-notice">Showing sample data. Live Zoho projects appear once the Zoho credentials are set.</p>
         )}
         <ProjectBrowser />
-        <ViewNav />
         <ViewSections />
       </div>
     </DashboardContext.Provider>
