@@ -142,7 +142,7 @@ export default function OverviewView() {
   );
 }
 
-const COLS: [keyof RosterRow, string, string][] = [['role', 'Role', '180px'], ['level', 'Level', '80px'], ['contact', 'Name', '180px'], ['firm', 'Company', '180px'], ['contact_email', 'Email', '230px'], ['phone', 'Phone', '140px']];
+const COLS: [keyof RosterRow, string, string][] = [['role', 'Role', '180px'], ['level', 'Level', '100px'], ['contact', 'Name', '200px'], ['firm', 'Company', '200px'], ['contact_email', 'Email', '230px'], ['phone', 'Phone', '140px']];
 
 function RosterTable({ rows, onEdit, onPick, onRemove }: {
   rows: RosterRow[]; onEdit: (r: RosterRow, f: 'role' | 'level') => void; onPick: (r: RosterRow) => void; onRemove: (r: RosterRow) => void;
