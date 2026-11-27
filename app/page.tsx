@@ -8,14 +8,13 @@ export default async function Page() {
   if (!session?.user?.email) redirect('/signin');
 
   return (
-    <>
+    <Dashboard userbar={(
       <div className="pt-userbar">
         <span>{session.user.email}</span>
         <form action={async () => { 'use server'; await signOut({ redirectTo: '/signin' }); }}>
           <button type="submit" className="pt-hidden-btn">Sign out</button>
         </form>
       </div>
-      <Dashboard />
-    </>
+    )} />
   );
 }
