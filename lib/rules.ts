@@ -43,7 +43,7 @@ export function projectBadge(name: string, dept: string): string {
   return s || dept;
 }
 
-export type Which = 'visible' | 'hidden' | 'completed' | 'all';
+export type Which = 'visible' | 'hidden' | 'all';
 
 /** Projects filed under a different department than their name prefix (e.g. HD-AlHaffar lives under Hanini Consulting). Keyed by uppercased project name. */
 export const DEPT_OVERRIDES: Record<string, Dept> = {
@@ -60,11 +60,11 @@ export const DEPT_OVERRIDES: Record<string, Dept> = {
   'BSTLEBRO-J01-CDS': 'BSO',
 };
 
-/** Department a project belongs to: an override first, then the J26 rule (all "-J26-" projects live under OPPs), else its name prefix. */
+/** Department a project belongs to: an override first, then the J26 rule (all "-J26-" projects live under OP), else its name prefix. */
 export function deptOf(name: string): Dept | null {
   const o = DEPT_OVERRIDES[String(name || '').toUpperCase()];
   if (o) return o;
-  if (String(name || '').toUpperCase().includes('-J26-')) return 'OPPs';
+  if (String(name || '').toUpperCase().includes('-J26-')) return 'OP';
   return null;
 }
 
@@ -72,6 +72,15 @@ export function deptOf(name: string): Dept | null {
 export function rowDept(p: ProjectRow): Dept | null {
   if (p.dept) return p.dept;
   return deptOf(p.name);
+}
+
+/** Home department of a project ignoring the J26 → OP rule: the department it came from (override, else name prefix; null when it has none). Used to color-code OP tiles. */
+export function homeDeptOf(name: string): Dept | null {
+  const o = DEPT_OVERRIDES[String(name || '').toUpperCase()];
+  if (o) return o;
+  const u = String(name || '').toUpperCase();
+  for (const d of ['HD', 'UC', 'BS', 'HC'] as Dept[]) if (u.startsWith(d)) return d;
+  return null;
 }
 
 /** ptInDept for a project row (honours the sheet override). */
@@ -82,16 +91,16 @@ export function rowInDept(p: ProjectRow, dept: string): boolean {
 }
 
 /** ptDeptProjects: projects of a department, excluding Completed/Cancelled, natural sort by name. */
-export function deptProjects(projects: ProjectRow[], dept: Dept, hidden: Set<string>, which: Which = 'visible', completed: Set<string> = new Set()): ProjectRow[] {
+export function deptProjects(projects: ProjectRow[], dept: Dept, hidden: Set<string>, which: Which = 'visible'): ProjectRow[] {
   return projects
-    .filter((p) => rowInDept(p, dept) && p.status !== 'Completed' && p.status !== 'Cancelled' && (which === 'all' ? true : which === 'hidden' ? hidden.has(p.id) : which === 'completed' ? completed.has(p.id) : !hidden.has(p.id) && !completed.has(p.id)))
+    .filter((p) => rowInDept(p, dept) && p.status !== 'Completed' && p.status !== 'Cancelled' && (which === 'all' ? true : which === 'hidden' ? hidden.has(p.id) : !hidden.has(p.id)))
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 }
 
 /** ptFirstProject: first visible project of a department, or the first one at all if every project is hidden. */
-export function firstProject(projects: ProjectRow[], dept: Dept, hidden: Set<string>, completed: Set<string> = new Set()): string | null {
-  const vis = deptProjects(projects, dept, hidden, 'visible', completed);
-  const list = vis.length ? vis : deptProjects(projects, dept, hidden, 'all', completed);
+export function firstProject(projects: ProjectRow[], dept: Dept, hidden: Set<string>): string | null {
+  const vis = deptProjects(projects, dept, hidden, 'visible');
+  const list = vis.length ? vis : deptProjects(projects, dept, hidden, 'all');
   return list.length ? list[0].id : null;
 }
 
