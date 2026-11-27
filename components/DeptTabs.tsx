@@ -14,8 +14,13 @@ export default function DeptTabs() {
   const countText = (d: string) => {
     if (projects.status === 'error') return 'Failed to load';
     if (projects.status !== 'ok') return '—';
-    const act = projects.data.filter((p) => inDept(p.name, d) && p.status === 'Active');
-    const open = act.reduce((n, p) => n + p.open_tasks, 0);
+    // Tiles show every project except Completed/Cancelled, so count those.
+    const all = projects.data.filter((p) => inDept(p.name, d) && p.status !== 'Completed' && p.status !== 'Cancelled');
+    const act = all.filter((p) => p.status === 'Active');
+    const held = all.filter((p) => p.status === 'On Hold');
+    const open = all.reduce((n, p) => n + p.open_tasks, 0);
+    if (!act.length && held.length) return held.length + ' On Hold · ' + fmtNum(open) + ' open tasks';
+    if (held.length) return act.length + ' active · ' + held.length + ' On Hold · ' + fmtNum(open) + ' open tasks';
     return act.length + ' active · ' + fmtNum(open) + ' open tasks';
   };
 
