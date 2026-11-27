@@ -2,7 +2,7 @@
 
 import { format } from 'd3';
 import { DEPTS, DEPT_COLORS, DEPT_NAMES } from '@/lib/types';
-import { inDept } from '@/lib/rules';
+import { rowInDept } from '@/lib/rules';
 import { useDashboard } from './DashboardContext';
 
 const fmtNum = format(',');
@@ -15,7 +15,7 @@ export default function DeptTabs() {
     if (projects.status === 'error') return 'Failed to load';
     if (projects.status !== 'ok') return '—';
     // Tiles show every project except Completed/Cancelled, so count those.
-    const all = projects.data.filter((p) => inDept(p.name, d) && p.status !== 'Completed' && p.status !== 'Cancelled');
+    const all = projects.data.filter((p) => rowInDept(p, d) && p.status !== 'Completed' && p.status !== 'Cancelled');
     const act = all.filter((p) => p.status === 'Active');
     const held = all.filter((p) => p.status === 'On Hold');
     const open = all.reduce((n, p) => n + p.open_tasks, 0);
