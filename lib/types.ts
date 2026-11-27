@@ -1,12 +1,25 @@
 // Row shapes produced by the loaders in reference/data-loaders.js.
 // The UI code depends on these exact field names, so keep them in sync with the loaders.
 
-export type Dept = 'HD' | 'UC' | 'BS';
-export const DEPTS: Dept[] = ['HD', 'UC', 'BS'];
+export type Dept = 'HD' | 'HDO' | 'UC' | 'BS' | 'BSO' | 'HC';
+export const DEPTS: Dept[] = ['HD', 'HDO', 'UC', 'BS', 'BSO', 'HC'];
 export const DEPT_NAMES: Record<Dept, string> = {
-  HD: 'Hanini Development',
+  HD: 'HD - Active',
+  HDO: 'HD - Opportunities',
   UC: 'Urban Core Builders',
-  BS: 'Brick Studios',
+  BS: 'BS - Active',
+  BSO: 'BS - Opportunities',
+  HC: 'Hanini Consulting',
+};
+
+/** Department tab badge colors, by family: Hanini departments blue, Urban Core orange, Brick Studios burgundy. */
+export const DEPT_COLORS: Record<Dept, string> = {
+  HD: '#2f6fbd',
+  HDO: '#2f6fbd',
+  UC: '#d9822b',
+  BS: '#800020',
+  BSO: '#800020',
+  HC: '#2f6fbd',
 };
 
 export type View = 'overview' | 'agenda' | 'schedule' | 'finance' | 'resources' | 'tasks' | 'meetings';
