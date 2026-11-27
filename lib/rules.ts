@@ -83,6 +83,23 @@ export function homeDeptOf(name: string): Dept | null {
   return null;
 }
 
+/** Distinct clients present in the rows (non-empty, A–Z). From the Project sheet's Client column. */
+export function distinctClients(projects: ProjectRow[]): string[] {
+  return [...new Set(projects.map((p) => (p.client || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+
+/** True when the row belongs to the selected client (null = all clients). */
+export function clientMatches(p: ProjectRow, client: string | null): boolean {
+  return !client || (p.client || '').trim() === client;
+}
+
+/** Button label for a client: its first letter — or its first two letters when another client shares the first letter (HG vs Halray). */
+export function clientLabel(client: string, clients: string[]): string {
+  const first = client[0].toUpperCase();
+  const clash = clients.some((c) => c !== client && c[0].toUpperCase() === first);
+  return clash ? client.slice(0, 2).toUpperCase() : first;
+}
+
 /** ptInDept for a project row (honours the sheet override). */
 export function rowInDept(p: ProjectRow, dept: string): boolean {
   const o = rowDept(p);
