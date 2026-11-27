@@ -39,7 +39,7 @@ export async function loadProjectOverrides(): Promise<Map<string, ProjectOverrid
   if (!sheetsReady()) return new Map();
   return cached(CACHE_KEY, async () => {
     try {
-      const values = await matrixValuesGet(`${matrixTab()}!A1:F200`);
+      const values = await matrixValuesGet(`${matrixTab()}!A1:H200`);
       if (!values.length) return new Map<string, ProjectOverride>();
       const head = values[0].map((h) => String(h ?? '').trim().toLowerCase());
       const col = (name: string) => head.indexOf(name);
