@@ -1,8 +1,8 @@
 'use client';
 
 import { format } from 'd3';
-import { DEPTS, DEPT_NAMES } from '@/lib/types';
-import { COLORS, inDept } from '@/lib/rules';
+import { DEPTS, DEPT_COLORS, DEPT_NAMES } from '@/lib/types';
+import { inDept } from '@/lib/rules';
 import { useDashboard } from './DashboardContext';
 
 const fmtNum = format(',');
@@ -22,13 +22,13 @@ export default function DeptTabs() {
   return (
     <header id="overview">
       <div className="pt-tabs pt-depts" role="tablist" aria-label="Department">
-        {DEPTS.map((d, i) => {
+        {DEPTS.map((d) => {
           const on = d === dept;
           return (
             <button key={d} type="button" role="tab" aria-selected={on}
               className={'pt-tab pt-dept' + (on ? ' pt-tab-on' : '')}
               onClick={() => selectDept(d)}>
-              <span className="pt-icon-badge pt-dept-badge" style={{ background: COLORS[i % COLORS.length] }}>{d}</span>
+              <span className="pt-icon-badge pt-dept-badge" style={{ background: DEPT_COLORS[d] }}>{d}</span>
               <span className="pt-icon-text">
                 <span className="pt-icon-name">{DEPT_NAMES[d]}</span>
                 <span className="pt-icon-meta">{countText(d)}</span>
