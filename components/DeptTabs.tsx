@@ -28,8 +28,8 @@ export default function DeptTabs() {
   return (
     <header id="overview">
       {clients.length > 0 && (
-        <>
-          <div className="pt-side-label">Client</div>
+        <div className="pt-clients-wrap">
+          <div className="pt-side-label">Client{client ? ` · ${client}` : ''}<span className="pt-caret" aria-hidden="true" /></div>
           <div className="pt-tabs pt-clients" role="tablist" aria-label="Client">
           <button key="all" type="button" role="tab" aria-selected={client === null}
             className={'pt-tab pt-client' + (client === null ? ' pt-tab-on' : '')}
@@ -44,7 +44,7 @@ export default function DeptTabs() {
             </button>
           ))}
         </div>
-        </>
+        </div>
       )}
       <div className="pt-side-label">Departments</div>
       <div className="pt-tabs pt-depts" role="tablist" aria-label="Department">
