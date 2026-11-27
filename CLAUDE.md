@@ -37,7 +37,10 @@ Treat `reference/` as read-only source material. Keep the row shapes from `data-
   (open filter + all-pages), phase (milestone) details, and per-person hours from Bulk Time Logs
   (`/projects/{id}/timelogs?view_type=projectspan`, scope `ZohoProjects.timesheets.READ` — each
   log entry counts under the person who logged it; the old task-total split is only a fallback
-  while that scope is missing). US data center unless env says otherwise.
+  while that scope is missing). Billable rates per hour come from the same project's users
+  (`/projects/{id}/users`, scope `ZohoProjects.users.READ` — each user's `invoice` /
+  `budget.rate_per_hour`, the BILLABLE rate; `budget.cost_per_hour`, the internal staff
+  cost, is never read or shown). US data center unless env says otherwise.
 - Zoho CRM: same Zoho OAuth client (scopes for CRM), Contacts search.
 - Google Sheets + Drive: service account (JSON key in env). Sheet `1h-64cziAfN6mlFV0nv_2m_DoNnB2BoUqiKVobIkWqQI`,
   tabs `Roster` (tab id 401964840) and `Agenda`. Drive: search "Notes by Gemini" docs, export as text, parse Summary/Next steps.
