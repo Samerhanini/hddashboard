@@ -1,8 +1,8 @@
 // Row shapes produced by the loaders in reference/data-loaders.js.
 // The UI code depends on these exact field names, so keep them in sync with the loaders.
 
-export type Dept = 'HD' | 'HDO' | 'UC' | 'BS' | 'BSO' | 'HC' | 'OPPs';
-export const DEPTS: Dept[] = ['HD', 'HDO', 'UC', 'BS', 'BSO', 'HC', 'OPPs'];
+export type Dept = 'HD' | 'HDO' | 'UC' | 'BS' | 'BSO' | 'HC' | 'OP';
+export const DEPTS: Dept[] = ['HD', 'HDO', 'UC', 'BS', 'BSO', 'HC', 'OP'];
 export const DEPT_NAMES: Record<Dept, string> = {
   HD: 'HD - Active',
   HDO: 'HD - Opportunities',
@@ -10,10 +10,10 @@ export const DEPT_NAMES: Record<Dept, string> = {
   BS: 'BS - Active',
   BSO: 'BS - Opportunities',
   HC: 'Hanini Consulting',
-  OPPs: 'OPPs',
+  OP: 'OP',
 };
 
-/** Department tab badge colors, by family: Hanini departments blue, Urban Core orange, Brick Studios burgundy, OPPs green. */
+/** Department tab badge colors, by family: Hanini departments blue, Urban Core orange, Brick Studios burgundy, OP green. */
 export const DEPT_COLORS: Record<Dept, string> = {
   HD: '#2f6fbd',
   HDO: '#2f6fbd',
@@ -21,7 +21,7 @@ export const DEPT_COLORS: Record<Dept, string> = {
   BS: '#800020',
   BSO: '#800020',
   HC: '#2f6fbd',
-  OPPs: '#3d9970',
+  OP: '#3d9970',
 };
 
 /** Project Roles Matrix sheet (holds the roster and the Project tab with per-project overrides). */
