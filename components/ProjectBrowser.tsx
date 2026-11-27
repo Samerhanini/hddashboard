@@ -1,7 +1,7 @@
 'use client';
 
 import { format } from 'd3';
-import { afMatch, clientMatches, COLORS, deptProjects, homeDeptOf, projectBadge, qbMatch, shortName } from '@/lib/rules';
+import { afMatch, clientMatches, COLORS, deptProjects, homeDeptOf, projectBadge, qbMatch, tileTitle } from '@/lib/rules';
 import { DEPT_COLORS, ROLES_MATRIX_URL } from '@/lib/types';
 import { useAfLoans, useAfSpend, useQbAr, useQbSales } from '@/lib/hooks';
 import type { ProjectRow } from '@/lib/types';
@@ -35,7 +35,7 @@ export default function ProjectBrowser() {
               onClick={() => selectProject(p.id)}>
               <span className="pt-icon-badge" style={{ background: badgeBg }}>{projectBadge(p.name, dept)}</span>
               <span className="pt-icon-text">
-                <span className="pt-icon-name">{shortName(p.name)}</span>
+                <span className="pt-icon-name">{tileTitle(p.name, dept)}</span>
                 <span className="pt-icon-meta"><span>{fmtNum(p.open_tasks)}</span>{' open' + (p.status === 'Active' ? '' : ' · ' + p.status)}</span>
               </span>
             </button>
