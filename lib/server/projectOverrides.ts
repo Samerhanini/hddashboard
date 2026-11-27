@@ -2,17 +2,19 @@ import { DEPT_NAMES, type Dept } from '../types';
 import { cached } from './cache';
 import { matrixTab, matrixValuesGet, sheetsReady } from './googleSheets';
 
-// Per-project overrides from the "Project" tab of the Project Roles Matrix
-// sheet: the "New Department" and "New Status" columns. The sheet is the
-// control surface — Samer edits it, the dashboard shows the project under
-// the chosen department/status. Dashboard-only: nothing is ever written
-// back to Zoho. A failed read fails OPEN (empty overrides) so the projects
-// API never breaks because the sheet is unreachable; the hardcoded
-// DEPT_OVERRIDES and the J26 rule in lib/rules.ts remain the baseline.
+// Per-project data from the "Project" tab of the Project Roles Matrix
+// sheet: the "Client" column plus the "New Department" and "New Status"
+// override columns. The sheet is the control surface — Samer edits it,
+// the dashboard shows the project under the chosen department/status.
+// Dashboard-only: nothing is ever written back to Zoho. A failed read
+// fails OPEN (empty map) so the projects API never breaks because the
+// sheet is unreachable; the hardcoded DEPT_OVERRIDES and the J26 rule in
+// lib/rules.ts remain the baseline.
 
 export interface ProjectOverride {
   dept?: Dept;
   status?: string;
+  client?: string;
 }
 
 const CACHE_KEY = 'sheets:matrix:project-overrides';
@@ -54,8 +56,9 @@ export async function loadProjectOverrides(): Promise<Map<string, ProjectOverrid
         if (!name) continue;
         const dept = parseDept(pick(r, 'new department'));
         const status = parseStatus(pick(r, 'new status'));
-        if (!dept && !status) continue;
-        out.set(name.toUpperCase(), { dept, status });
+        const client = pick(r, 'client') || undefined;
+        if (!dept && !status && !client) continue;
+        out.set(name.toUpperCase(), { dept, status, client });
       }
       return out;
     } catch (err) {
