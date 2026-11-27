@@ -1,8 +1,8 @@
-import type { ApiRows, HoursRow, PhaseRow, ProjectRow, TaskRow } from '../types';
+import type { ApiRows, HoursRow, PhaseRow, ProjectRateRow, ProjectRow, TaskRow } from '../types';
 import { sampleProjects } from '../fixtures/projects';
 import { sampleHours, sampleProjectData } from '../fixtures/tasks';
 import { cached } from './cache';
-import { hasNextPage, parseHours, parsePhase, parseProjects, parseTasks, parseTimelogs, phaseIdsOf } from './parse/zoho';
+import { hasNextPage, parseHours, parsePhase, parseProjects, parseProjectUsers, parseTasks, parseTimelogs, phaseIdsOf } from './parse/zoho';
 import { mapLimit, portalId, projectsBase, projectsRestBase, zohoGet, zohoReady } from './zoho';
 
 // Zoho Projects loaders (datasets.json -> projects, projectTasks, projectHours, projectPhases).
@@ -177,6 +177,38 @@ export async function loadProjectHours(projectId: string): Promise<ApiRows<Hours
     }
     throw err;
   }
+}
+
+/**
+ * Billable rate per hour for each user on a project, from Zoho Projects V3
+ * GET /portal/{portal}/projects/{project}/users (scope ZohoProjects.users.READ).
+ * The rate shown is the BILLABLE rate (`invoice` / `budget.rate_per_hour`);
+ * the internal staff cost (`budget.cost_per_hour`) is never read or shown.
+ * If the token lacks the users scope (403), the route still answers with
+ * available: false and no rows, so the Resources tab shows hours without
+ * costs instead of failing.
+ */
+export async function loadProjectRates(projectId: string): Promise<ApiRows<ProjectRateRow>> {
+  if (!zohoReady()) return { rows: [], source: 'sample' };
+  return cached(`zoho:${portalId()}:rates:${projectId}`, async () => {
+    try {
+      const rows: ProjectRateRow[] = [];
+      let page = 1, more = true;
+      while (more && page <= 5) {
+        const ans = await zohoGet(`${projectsBase()}/projects/${projectId}/users`, { per_page: PER_PAGE, page });
+        rows.push(...parseProjectUsers(ans));
+        more = hasNextPage(ans);
+        page += 1;
+      }
+      return { rows, truncated: more, source: 'live' as const, available: true };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/403|insufficient|scope|permission|not authorized|unauthorised/i.test(msg)) {
+        return { rows: [], source: 'live' as const, available: false };
+      }
+      throw err;
+    }
+  });
 }
 
 /** Phases used by the project's tasks, then each phase's owner, status, colour and dates. */
