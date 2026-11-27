@@ -34,10 +34,12 @@ export default function DeptTabs() {
               className={'pt-tab pt-dept' + (on ? ' pt-tab-on' : '')}
               onClick={() => selectDept(d)}>
               <span className="pt-icon-badge pt-dept-badge" style={{ background: DEPT_COLORS[d] }}>{d}</span>
-              <span className="pt-icon-text">
-                <span className="pt-icon-name">{DEPT_NAMES[d]}</span>
-                <span className="pt-icon-meta">{countText(d)}</span>
-              </span>
+              {d !== 'OP' && (
+                <span className="pt-icon-text">
+                  <span className="pt-icon-name">{DEPT_NAMES[d]}</span>
+                  <span className="pt-icon-meta">{countText(d)}</span>
+                </span>
+              )}
             </button>
           );
         })}
