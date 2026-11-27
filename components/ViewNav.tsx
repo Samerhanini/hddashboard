@@ -10,7 +10,7 @@ const svgProps = {
 
 // Icons copied from reference/page.html.
 const ITEMS: { view: View; label: string; icon: React.ReactNode }[] = [
-  { view: 'overview', label: 'Roles', icon: <svg {...svgProps}><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5" /><circle cx="17" cy="9" r="2.3" /><path d="M15.5 14.2c2.4-.3 4.5 1.4 5 4.3" /></svg> },
+  { view: 'overview', label: 'People', icon: <svg {...svgProps}><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5" /><circle cx="17" cy="9" r="2.3" /><path d="M15.5 14.2c2.4-.3 4.5 1.4 5 4.3" /></svg> },
   { view: 'agenda', label: 'Agenda', icon: <svg {...svgProps}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4" /></svg> },
   { view: 'schedule', label: 'Schedule', icon: <svg {...svgProps}><rect x="3" y="4.5" width="18" height="16" rx="2" /><path d="M3 9h18M8 3v3M16 3v3M7 13h6M10 16.5h7" /></svg> },
   { view: 'finance', label: 'Finance', icon: <svg {...svgProps}><circle cx="12" cy="12" r="9" /><path d="M15 8.5c-.6-.9-1.7-1.5-3-1.5-1.7 0-3 .9-3 2.3 0 3.2 6 1.8 6 5 0 1.4-1.3 2.4-3 2.4-1.4 0-2.6-.6-3.2-1.6M12 5.5v13" /></svg> },
