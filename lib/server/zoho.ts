@@ -1,97 +1,187 @@
-import { hasEnv } from './env';
+// Parsers ported from reference/data-loaders.js (projects, projectTasks, projectHours, projectPhases, crmContacts).
+// They accept the raw Zoho REST answer (or the connector's { data: ... } wrapper) and return the same row
+// shapes the original produced, so the UI code works unchanged.
 
-// Zoho OAuth (Self Client refresh-token flow) shared by Zoho Projects and Zoho CRM.
-// Env: ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REFRESH_TOKEN, ZOHO_DC (com by default), ZOHO_PORTAL_ID.
+import type { CrmContactRow, HoursRow, PhaseRow, ProjectRateRow, ProjectRow, TaskRow } from '../../types';
 
-export const zohoReady = () => hasEnv('ZOHO_CLIENT_ID', 'ZOHO_CLIENT_SECRET', 'ZOHO_REFRESH_TOKEN');
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type Any = any;
 
-// Data centre -> domain suffix used by accounts.zoho.<x> and projectsapi.zoho.<x>.
-const DC: Record<string, { accounts: string; projects: string }> = {
-  com: { accounts: 'https://accounts.zoho.com', projects: 'https://projectsapi.zoho.com' },
-  eu: { accounts: 'https://accounts.zoho.eu', projects: 'https://projectsapi.zoho.eu' },
-  in: { accounts: 'https://accounts.zoho.in', projects: 'https://projectsapi.zoho.in' },
-  'com.au': { accounts: 'https://accounts.zoho.com.au', projects: 'https://projectsapi.zoho.com.au' },
-  jp: { accounts: 'https://accounts.zoho.jp', projects: 'https://projectsapi.zoho.jp' },
-  ca: { accounts: 'https://accounts.zohocloud.ca', projects: 'https://projectsapi.zohocloud.ca' },
-  sa: { accounts: 'https://accounts.zoho.sa', projects: 'https://projectsapi.zoho.sa' },
+export function decode(s: unknown): string {
+  return String(s == null ? '' : s).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+}
+
+function rootOf(answer: Any): Any {
+  if (answer && answer.status && answer.status !== 'success' && !answer.data) throw new Error(JSON.stringify(answer).slice(0, 300));
+  return answer && answer.data ? answer.data : answer;
+}
+/** More pages to read? Uses page_info when Zoho sends it; for a plain list, a full page means there may be more. */
+export const hasNextPage = (answer: Any, perPage = 200): boolean => {
+  const r = rootOf(answer);
+  if (Array.isArray(r)) return r.length >= perPage;
+  return !!(r && r.page_info && r.page_info.has_next_page);
 };
-function dc() {
-  const key = (process.env.ZOHO_DC || 'com').trim().toLowerCase();
-  const d = DC[key];
-  if (!d) throw new Error(`Unknown ZOHO_DC "${key}". Use one of: ${Object.keys(DC).join(', ')}.`);
-  // Optional overrides, only needed to test against a stand-in Zoho server.
-  return { accounts: process.env.ZOHO_ACCOUNTS_URL || d.accounts, projects: process.env.ZOHO_PROJECTS_URL || d.projects };
+/** Tasks of an answer: Zoho V3 may answer { tasks: [...] } or a plain list (as it does for projects). */
+const tasksOf = (root: Any): Any[] => (Array.isArray(root) ? root : (root && root.tasks) || []);
+
+export function parseProjects(answer: Any): ProjectRow[] {
+  const root = rootOf(answer);
+  const list: Any[] = Array.isArray(root) ? root : (root && (root.result || root.projects)) || [];
+  return list.map((p) => ({
+    id: String(p.id),
+    name: decode(p.name),
+    group: decode(p.project_group && p.project_group.name) || 'Ungrouped',
+    status: (p.status && p.status.name) || '',
+    owner: (p.owner && (p.owner.full_name || p.owner.name)) || '',
+    percent_complete: Number(p.percent_complete || 0),
+    open_tasks: Number((p.tasks && p.tasks.open_count) || 0),
+    closed_tasks: Number((p.tasks && p.tasks.closed_count) || 0),
+    start_date: p.start_date || null,
+    end_date: p.end_date || null,
+  }));
 }
 
-export function portalId(): string {
-  const id = (process.env.ZOHO_PORTAL_ID || '854982967').trim();
-  if (!/^[0-9]{1,25}$/.test(id)) throw new Error('ZOHO_PORTAL_ID must be digits only.');
-  return id;
-}
-
-/** Zoho Projects V3 base URL for our portal. */
-export const projectsBase = () => `${dc().projects}/api/v3/portal/${portalId()}`;
-/** Zoho Projects V2 ("restapi") base URL, used where V3 lacks an equivalent. */
-export const projectsRestBase = () => `${dc().projects}/restapi/portal/${portalId()}`;
-
-interface Token { value: string; expiresAt: number; apiDomain: string }
-let token: Token | null = null;
-let refreshing: Promise<Token> | null = null;
-
-async function refresh(): Promise<Token> {
-  const body = new URLSearchParams({
-    grant_type: 'refresh_token',
-    client_id: process.env.ZOHO_CLIENT_ID!.trim(),
-    client_secret: process.env.ZOHO_CLIENT_SECRET!.trim(),
-    refresh_token: process.env.ZOHO_REFRESH_TOKEN!.trim(),
+export function parseTasks(answer: Any): TaskRow[] {
+  const root = rootOf(answer);
+  const list: Any[] = tasksOf(root);
+  return list.map((t) => {
+    const owners = ((t.owners_and_work && t.owners_and_work.owners) || []).map((o: Any) => o.name).filter((n: string) => n && n !== 'Unassigned User');
+    return {
+      id: String(t.id),
+      project_id: String((t.project && t.project.id) || ''),
+      task: decode(t.name),
+      tasklist: decode(t.tasklist && t.tasklist.name),
+      depth: Number(t.depth || 0),
+      owners: owners.length ? owners.join(', ') : 'Unassigned',
+      status: (t.status && t.status.name) || '',
+      completion: Number(t.completion_percentage || 0),
+      start: t.start_date || null,
+      due: t.end_date || null,
+      milestone_id: String((t.milestone && t.milestone.id) || ''),
+    };
   });
-  const res = await fetch(`${dc().accounts}/oauth/v2/token`, { method: 'POST', body, cache: 'no-store' });
-  const json = (await res.json().catch(() => ({}))) as { access_token?: string; expires_in?: number; api_domain?: string; error?: string };
-  // Never log the response itself: on success it contains the access token.
-  if (!res.ok || !json.access_token) throw new Error(`Zoho token refresh failed (${res.status}${json.error ? ': ' + json.error : ''}).`);
+}
+
+/** "12:30" -> 12.5 hours. */
+const hrs = (s: unknown) => { if (!s) return 0; const m = String(s).match(/^(\d+):(\d+)$/); return m ? Number(m[1]) + Number(m[2]) / 60 : Number(s) || 0; };
+
+/**
+ * Exact hours from Zoho Projects Bulk Time Logs (V3):
+ * GET /portal/{portal}/projects/{project}/timelogs?view_type=projectspan
+ * Response: { time_logs: [{ date, log_details: [{ owner, module_detail,
+ * log_hour: "HH:MM", billing_status, project }, ...] }], page_info }.
+ * One row per (task, person who actually logged time), hours summed from
+ * that person's own log entries — never split between task owners.
+ */
+export function parseTimelogs(answer: Any | Any[]): HoursRow[] {
+  // Accept one page's answer, or several pages: aggregation is across all
+  // pages, so a person with entries on two pages still gets one row.
+  const answers: Any[] = Array.isArray(answer) ? answer : [answer];
+  const groups: Any[] = answers.flatMap((a) => { const r = rootOf(a); return (r && r.time_logs) || []; });
+  // Aggregate per (task, person) first, so several entries on one task by
+  // the same person become a single row with the exact summed hours.
+  const byTaskPerson = new Map<string, { project_id: string; task_id: string; task: string; person: string; email: string; hours: number; entries: number }>();
+  const taskTotals = new Map<string, { hours: number; people: Set<string> }>();
+  groups.forEach((g: Any) => {
+    ((g && g.log_details) || []).forEach((d: Any) => {
+      const h = hrs(d && d.log_hour);
+      if (!h) return;
+      const owner = (d && d.owner) || {};
+      const person = [owner.first_name, owner.last_name].filter(Boolean).join(' ') || owner.name || owner.email || 'Unassigned';
+      const mod = (d && d.module_detail) || {};
+      const type = mod.type || d.type || 'task';
+      const taskId = String(mod.id || 'general');
+      const taskName = decode(mod.name || (type === 'general' ? 'General log' : type === 'issue' || type === 'bug' ? 'Issue log' : ''));
+      const projectId = String((d && d.project && d.project.id) || '');
+      const key = taskId + '|' + person;
+      const e = byTaskPerson.get(key) || { project_id: projectId, task_id: taskId, task: taskName, person, email: String(owner.email || ''), hours: 0, entries: 0 };
+      e.hours += h; e.entries += 1;
+      byTaskPerson.set(key, e);
+      const t = taskTotals.get(taskId) || { hours: 0, people: new Set<string>() };
+      t.hours += h; t.people.add(person);
+      taskTotals.set(taskId, t);
+    });
+  });
+  return [...byTaskPerson.values()].map((e) => {
+    const t = taskTotals.get(e.task_id)!;
+    return {
+      project_id: e.project_id, task_id: e.task_id, task: e.task, person: e.person, email: e.email || undefined,
+      owners: t.people.size, task_hours: Math.round(t.hours * 100) / 100,
+      hours: Math.round(e.hours * 100) / 100, entries: e.entries,
+    };
+  });
+}
+
+/**
+ * Fallback, kept only while the Zoho token lacks the timesheets scope:
+ * one row per owner of each task with logged hours, each owner getting an
+ * even share of the task's total. This is an ESTIMATE, not a timesheet
+ * record — the task's owners are not necessarily the people who logged time.
+ */
+export function parseHours(answer: Any): HoursRow[] {
+  const root = rootOf(answer);
+  const rows: HoursRow[] = [];
+  tasksOf(root).forEach((t: Any) => {
+    const total = hrs(t.log_hours && t.log_hours.total_hours);
+    if (!total) return;
+    const owners = ((t.owners_and_work && t.owners_and_work.owners) || []).filter((o: Any) => o && o.name !== 'Unassigned User');
+    const names: string[] = owners.length ? owners.map((o: Any) => [o.first_name, o.last_name].filter(Boolean).join(' ') || o.name) : ['Unassigned'];
+    names.forEach((n) => rows.push({ project_id: String((t.project && t.project.id) || ''), task_id: String(t.id), person: n, owners: names.length, task_hours: Math.round(total * 100) / 100, hours: Math.round((total / names.length) * 100) / 100 }));
+  });
+  return rows;
+}
+
+/**
+ * Billable rates of a project's users, from Zoho Projects V3
+ * GET /portal/{portal}/projects/{project}/users (scope ZohoProjects.users.READ).
+ * Each user carries `invoice` — the billable rate per hour set for that user
+ * on this project — and `budget.rate_per_hour` (same billing rate).
+ * `budget.cost_per_hour` is the internal staff cost and is deliberately NOT
+ * read: the dashboard shows the billable number, never the staff cost.
+ */
+export function parseProjectUsers(answer: Any): ProjectRateRow[] {
+  const root = rootOf(answer);
+  const list: Any[] = Array.isArray(root) ? root : (root && root.users) || [];
+  return list.map((u: Any) => ({
+    person: decode(u.full_name || u.display_name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.name || ''),
+    email: String(u.email || ''),
+    rate_per_hour: Number(u.invoice ?? (u.budget && u.budget.rate_per_hour) ?? 0) || 0,
+  })).filter((r) => r.person);
+}
+
+/** Phase ids and names used by the tasks in an answer (milestone "None" is skipped). */
+export function phaseIdsOf(answer: Any, into: Map<string, string>) {
+  const root = rootOf(answer);
+  tasksOf(root).forEach((t: Any) => { const m = t.milestone; if (m && m.id && m.name && m.name !== 'None') into.set(String(m.id), decode(m.name)); });
+}
+
+export function parsePhase(answer: Any, fallbackName: string, projectId: string): PhaseRow | null {
+  const m = answer && (answer.data || answer);
+  if (!m || !m.id) return null;
   return {
-    value: json.access_token,
-    // Renew five minutes early.
-    expiresAt: Date.now() + Math.max(60, (json.expires_in || 3600) - 300) * 1000,
-    apiDomain: json.api_domain || 'https://www.zohoapis.com',
+    id: String(m.id),
+    project_id: String((m.project && m.project.id) || projectId || ''),
+    phase: decode(m.name || fallbackName),
+    owner: m.owner ? [m.owner.first_name, m.owner.last_name].filter(Boolean).join(' ') || m.owner.name || '' : '',
+    status: (m.status && m.status.name) || '',
+    status_color: (m.status && (m.status.color_hexcode || m.status.color)) || '',
+    closed: !!(m.status && (m.status.is_closed_type || m.status.is_closed)),
+    start_date: m.start_date || null,
+    end_date: m.end_date || null,
   };
 }
 
-async function getToken(force = false): Promise<Token> {
-  if (!force && token && Date.now() < token.expiresAt) return token;
-  refreshing ??= refresh().finally(() => { refreshing = null; });
-  token = await refreshing;
-  return token;
-}
-
-/** API domain for Zoho CRM etc., as reported by the token endpoint (e.g. https://www.zohoapis.com). */
-export async function zohoApiDomain(): Promise<string> {
-  return (await getToken()).apiDomain;
-}
-
-type Params = Record<string, string | number | undefined>;
-
-/** GET a Zoho API URL as JSON, renewing the access token once if Zoho says it expired. 204 -> {}. */
-export async function zohoGet<T = unknown>(url: string, params: Params = {}): Promise<T> {
-  const u = new URL(url);
-  for (const [k, v] of Object.entries(params)) if (v !== undefined) u.searchParams.set(k, String(v));
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const t = await getToken(attempt > 0);
-    const res = await fetch(u, { headers: { Authorization: `Zoho-oauthtoken ${t.value}`, Accept: 'application/json' }, cache: 'no-store' });
-    if (res.status === 401 && attempt === 0) continue;
-    if (res.status === 204) return {} as T;
-    const text = await res.text();
-    if (!res.ok) throw new Error(`Zoho ${res.status} for ${u.pathname}: ${text.slice(0, 300)}`);
-    return (text ? JSON.parse(text) : {}) as T;
-  }
-  throw new Error(`Zoho refused the request for ${u.pathname} after renewing the token.`);
-}
-
-/** Run async jobs with at most `limit` in flight (keeps us under Zoho's per-minute limits). */
-export async function mapLimit<I, O>(items: I[], limit: number, fn: (item: I) => Promise<O>): Promise<O[]> {
-  const out: O[] = new Array(items.length);
-  let next = 0;
-  const worker = async () => { while (next < items.length) { const i = next++; out[i] = await fn(items[i]); } };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return out;
+export function parseCrmContacts(answer: Any): { rows: CrmContactRow[]; more: boolean } {
+  if (answer && answer.status && answer.status !== 'success' && !answer.data) throw new Error(JSON.stringify(answer).slice(0, 300));
+  const root = answer && answer.data && !Array.isArray(answer.data) ? answer.data : answer;
+  const list: Any[] = root && Array.isArray(root.data) ? root.data : Array.isArray(root) ? root : [];
+  const rows = list.map((c) => ({
+    id: String(c.id),
+    name: c.Full_Name || [c.First_Name, c.Last_Name].filter(Boolean).join(' '),
+    company: (c.Account_Name && c.Account_Name.name) || '',
+    title: c.Title || '',
+    email: c.Email || '',
+    mobile: c.Mobile || c.Phone || '',
+  }));
+  return { rows, more: !!(root && root.info && root.info.more_records) };
 }
