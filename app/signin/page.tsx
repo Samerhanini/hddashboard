@@ -25,7 +25,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     <main className="pt-signin">
       <div className="pt-card pt-signin-card">
         <h1 className="pt-signin-title">Projects &amp; Tasks</h1>
-        <p className="pt-sub">HD - Active · HD - Opportunities · Urban Core Builders · BS - Active · BS - Opportunities · Hanini Consulting · OP</p>
+        <p className="pt-sub">HD - Active · HD - Opportunities · UC - Active · BS - Active · BS - Opportunities · Hanini Consulting · OP</p>
         {!authConfigured ? (
           <p className="pt-notice">Sign-in isn’t set up yet. The site stays locked until the Google sign-in settings are added.</p>
         ) : (
