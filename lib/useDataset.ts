@@ -13,6 +13,8 @@ export interface DatasetState<T> {
   asOf?: string;
   /** Hours only: true when rows are exact time-log records, false when estimated. */
   exact?: boolean;
+  /** Rates only: false when Zoho answered but the billable rates aren't available (missing scope). */
+  available?: boolean;
   refresh: () => void;
 }
 
@@ -38,5 +40,5 @@ export function useDataset<T>(url: string | null): DatasetState<T> {
   if (!url) return { status: 'idle', data: [], refresh };
   if (error) return { status: 'error', data: [], message: error instanceof Error ? error.message : String(error), refresh };
   if (!data) return { status: 'loading', data: [], refresh };
-  return { status: 'ok', data: data.rows, truncated: data.truncated, source: data.source, asOf: data.asOf, exact: data.exact, refresh };
+  return { status: 'ok', data: data.rows, truncated: data.truncated, source: data.source, asOf: data.asOf, exact: data.exact, available: data.available, refresh };
 }
