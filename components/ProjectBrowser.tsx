@@ -63,7 +63,7 @@ export default function ProjectBrowser() {
       {dept === 'OP' && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', fontSize: 12, color: '#666', margin: '2px 0 8px' }}>
           <span><i style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#2f6fbd', marginRight: 5 }} />HD - Active</span>
-          <span><i style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#d9822b', marginRight: 5 }} />Urban Core Builders</span>
+          <span><i style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#d9822b', marginRight: 5 }} />UC - Active</span>
           <span><i style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#800020', marginRight: 5 }} />BS - Active</span>
           <span><i style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#5b7083', marginRight: 5 }} />No department</span>
         </div>
