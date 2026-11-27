@@ -2,20 +2,21 @@
 
 import { format } from 'd3';
 import { DEPTS, DEPT_COLORS, DEPT_NAMES } from '@/lib/types';
-import { rowInDept } from '@/lib/rules';
+import { clientLabel, clientMatches, distinctClients, rowInDept } from '@/lib/rules';
 import { useDashboard } from './DashboardContext';
 
 const fmtNum = format(',');
 
-/** Department tabs (deptBadge + deptCount in the original). */
+/** Department tabs (deptBadge + deptCount in the original), with the client filter row above them. */
 export default function DeptTabs() {
-  const { dept, projects, selectDept } = useDashboard();
+  const { dept, projects, selectDept, client, setClient } = useDashboard();
+  const clients = distinctClients(projects.data);
 
   const countText = (d: string) => {
     if (projects.status === 'error') return 'Failed to load';
     if (projects.status !== 'ok') return '—';
     // Tiles show every project except Completed/Cancelled, so count those.
-    const all = projects.data.filter((p) => rowInDept(p, d) && p.status !== 'Completed' && p.status !== 'Cancelled');
+    const all = projects.data.filter((p) => rowInDept(p, d) && clientMatches(p, client) && p.status !== 'Completed' && p.status !== 'Cancelled');
     const act = all.filter((p) => p.status === 'Active');
     const held = all.filter((p) => p.status === 'On Hold');
     const open = all.reduce((n, p) => n + p.open_tasks, 0);
@@ -26,6 +27,22 @@ export default function DeptTabs() {
 
   return (
     <header id="overview">
+      {clients.length > 0 && (
+        <div className="pt-tabs pt-clients" role="tablist" aria-label="Client">
+          <button key="all" type="button" role="tab" aria-selected={client === null}
+            className={'pt-tab pt-client' + (client === null ? ' pt-tab-on' : '')}
+            title="All clients" onClick={() => setClient(null)}>
+            All
+          </button>
+          {clients.map((c) => (
+            <button key={c} type="button" role="tab" aria-selected={client === c}
+              className={'pt-tab pt-client' + (client === c ? ' pt-tab-on' : '')}
+              title={c} onClick={() => setClient(client === c ? null : c)}>
+              {clientLabel(c, clients)}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="pt-tabs pt-depts" role="tablist" aria-label="Department">
         {DEPTS.map((d) => {
           const on = d === dept;
