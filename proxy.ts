@@ -16,5 +16,5 @@ export const proxy = auth((req) => {
 
 export const config = {
   // Everything except the sign-in page, Auth.js's own routes and static files.
-  matcher: ['/((?!signin|api/auth|_next/static|_next/image|favicon.ico|robots.txt).*)'],
+  matcher: ['/((?!signin|api/auth|_next/static|_next/image|favicon.ico|apple-icon.png|icon.png|robots.txt).*)'],
 };
