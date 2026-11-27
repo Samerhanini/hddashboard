@@ -3,9 +3,10 @@
 import type { Dept, View } from '@/lib/types';
 import { useDashboard } from './DashboardContext';
 import AgendaView from './views/AgendaView';
-import { AppFolioCard, HoursCard, QuickBooksCard } from './views/FinanceView';
+import { AppFolioCard, QuickBooksCard } from './views/FinanceView';
 import MeetingsView from './views/MeetingsView';
 import OverviewView from './views/OverviewView';
+import ResourcesView from './views/ResourcesView';
 import ScheduleView from './views/ScheduleView';
 import TasksView from './views/TasksView';
 
@@ -22,7 +23,7 @@ interface SectionDef {
 // One entry per <section data-view-section> in reference/page.html, in the same order.
 const SECTIONS: SectionDef[] = [
   { id: 'project-overview', view: 'overview', Component: OverviewView },
-  { id: 'project-hours', view: 'finance', Component: HoursCard },
+  { id: 'project-hours', view: 'resources', Component: ResourcesView },
   { id: 'project-quickbooks', view: 'finance', hide: ['HD'], Component: QuickBooksCard },
   { id: 'project-appfolio', view: 'finance', only: ['HD'], Component: AppFolioCard },
   { id: 'project-phases', view: 'schedule', Component: ScheduleView },
