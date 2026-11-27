@@ -12,14 +12,10 @@ import ViewSections from './ViewSections';
 
 // Per-browser settings, same keys as the original so the behaviour matches.
 const HIDDEN_KEY = 'pt-hidden-projects';
-const COMPLETED_KEY = 'pt-completed-projects';
 const VIEW_KEY = 'pt-project-view';
 
 function readHidden(): Set<string> {
   try { return new Set((JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]') as unknown[]).map(String)); } catch { return new Set(); }
-}
-function readCompleted(): Set<string> {
-  try { return new Set((JSON.parse(localStorage.getItem(COMPLETED_KEY) || '[]') as unknown[]).map(String)); } catch { return new Set(); }
 }
 function readView(): View {
   try { const v = localStorage.getItem(VIEW_KEY); if (v && (VIEWS as string[]).includes(v)) return v as View; } catch { /* storage blocked */ }
@@ -37,13 +33,12 @@ export default function Dashboard() {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [hidden, setHiddenSet] = useState<Set<string>>(() => new Set());
   const [showHidden, setShowHidden] = useState(false);
-  const [completed, setCompletedSet] = useState<Set<string>>(() => new Set());
-  const [showCompleted, setShowCompleted] = useState(false);
 
   // Browser-only state is read after mount so the server render and first client render agree.
   useEffect(() => {
     setHiddenSet(readHidden());
-    setCompletedSet(readCompleted());
+    // The local "completed" marking was removed (Nov 27, 2026): status is set in Zoho now.
+    try { localStorage.removeItem('pt-completed-projects'); } catch { /* storage blocked */ }
     setView(readView());
     const h = deptFromHash();
     if (h) setDept(h);
@@ -57,21 +52,20 @@ export default function Dashboard() {
   // ptKeepProjectInDept: keep the selected project inside the current department.
   useEffect(() => {
     if (projects.status !== 'ok') return;
-    const list = deptProjects(rows, dept, hidden, 'all', completed);
+    const list = deptProjects(rows, dept, hidden, 'all');
     if (!list.length) { if (projectId !== null) setProjectId(null); return; }
-    if (!projectId || !list.some((p) => p.id === projectId)) setProjectId(firstProject(rows, dept, hidden, completed) || list[0].id);
-  }, [projects.status, rows, dept, hidden, completed, projectId]);
+    if (!projectId || !list.some((p) => p.id === projectId)) setProjectId(firstProject(rows, dept, hidden) || list[0].id);
+  }, [projects.status, rows, dept, hidden, projectId]);
 
   const project = useMemo(() => rows.find((p) => p.id === projectId) || null, [rows, projectId]);
 
   const selectDept = useCallback((d: Dept) => {
     setDept(d);
-    setProjectId(firstProject(rows, d, hidden, completed));
+    setProjectId(firstProject(rows, d, hidden));
     setShowHidden(false);
-    setShowCompleted(false);
     history.replaceState(null, '', '#' + d);
     window.scrollTo({ top: 0 });
-  }, [rows, hidden, completed]);
+  }, [rows, hidden]);
 
   const selectProject = useCallback((id: string) => {
     setProjectId(id);
@@ -84,57 +78,22 @@ export default function Dashboard() {
   }, []);
 
   // ptSetHidden: hiding the selected project moves the selection to the first visible one.
-  // Hidden and completed are mutually exclusive: hiding a project un-marks it completed.
   const setHidden = useCallback((id: string, hide: boolean) => {
     const nextHidden = new Set(hidden);
     if (hide) nextHidden.add(id); else nextHidden.delete(id);
-    const nextCompleted = new Set(completed);
-    if (hide) nextCompleted.delete(id);
     setHiddenSet(nextHidden);
-    setCompletedSet(nextCompleted);
     try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...nextHidden])); } catch { /* storage blocked */ }
-    try { localStorage.setItem(COMPLETED_KEY, JSON.stringify([...nextCompleted])); } catch { /* storage blocked */ }
     if (hide && id === projectId) {
-      const vis = deptProjects(rows, dept, nextHidden, 'visible', nextCompleted);
+      const vis = deptProjects(rows, dept, nextHidden, 'visible');
       if (vis.length) setProjectId(vis[0].id);
     }
-  }, [rows, dept, projectId, hidden, completed]);
-
-  // Completing the selected project moves the selection to the first visible one.
-  // Completing a project un-hides it; un-completing returns it to the visible list.
-  const setCompleted = useCallback((id: string, done: boolean) => {
-    const nextCompleted = new Set(completed);
-    if (done) nextCompleted.add(id); else nextCompleted.delete(id);
-    const nextHidden = new Set(hidden);
-    if (done) nextHidden.delete(id);
-    setCompletedSet(nextCompleted);
-    setHiddenSet(nextHidden);
-    try { localStorage.setItem(COMPLETED_KEY, JSON.stringify([...nextCompleted])); } catch { /* storage blocked */ }
-    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...nextHidden])); } catch { /* storage blocked */ }
-    if (done && id === projectId) {
-      const vis = deptProjects(rows, dept, nextHidden, 'visible', nextCompleted);
-      if (vis.length) setProjectId(vis[0].id);
-    }
-  }, [rows, dept, projectId, hidden, completed]);
-
-  // "a": make a project active again — clears both its hidden and completed marks.
-  const setActive = useCallback((id: string) => {
-    const nextHidden = new Set(hidden);
-    nextHidden.delete(id);
-    const nextCompleted = new Set(completed);
-    nextCompleted.delete(id);
-    setHiddenSet(nextHidden);
-    setCompletedSet(nextCompleted);
-    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...nextHidden])); } catch { /* storage blocked */ }
-    try { localStorage.setItem(COMPLETED_KEY, JSON.stringify([...nextCompleted])); } catch { /* storage blocked */ }
-  }, [hidden, completed]);
+  }, [rows, dept, projectId, hidden]);
 
   const state: DashboardState = {
-    dept, view, projectId, project, projects, hidden, showHidden, completed, showCompleted,
+    dept, view, projectId, project, projects, hidden, showHidden,
     bldg: project ? bldgOf(project.name) : null,
-    selectDept, selectProject, selectView, setHidden, setCompleted, setActive,
-    toggleShowHidden: () => { setShowHidden((s) => !s); setShowCompleted(false); },
-    toggleShowCompleted: () => { setShowCompleted((s) => !s); setShowHidden(false); },
+    selectDept, selectProject, selectView, setHidden,
+    toggleShowHidden: () => { setShowHidden((s) => !s); },
   };
 
   return (
