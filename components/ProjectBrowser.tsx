@@ -1,7 +1,7 @@
 'use client';
 
 import { format } from 'd3';
-import { afMatch, COLORS, deptProjects, homeDeptOf, projectBadge, qbMatch, shortName } from '@/lib/rules';
+import { afMatch, clientMatches, COLORS, deptProjects, homeDeptOf, projectBadge, qbMatch, shortName } from '@/lib/rules';
 import { DEPT_COLORS, ROLES_MATRIX_URL } from '@/lib/types';
 import { useAfLoans, useAfSpend, useQbAr, useQbSales } from '@/lib/hooks';
 import type { ProjectRow } from '@/lib/types';
@@ -11,13 +11,13 @@ const fmtNum = format(',');
 
 /** Project tiles with hide/unhide (projectIcons + hiddenToggle in the original). */
 export default function ProjectBrowser() {
-  const { dept, projects, projectId, hidden, showHidden, selectProject, setHidden, toggleShowHidden, hasFinance } = useDashboardWithFinance();
-  const hiddenCount = projects.status === 'ok' ? deptProjects(projects.data, dept, hidden, 'hidden').length : 0;
+  const { dept, projects, projectId, hidden, showHidden, selectProject, setHidden, toggleShowHidden, hasFinance, client } = useDashboardWithFinance();
+  const hiddenCount = projects.status === 'ok' ? deptProjects(projects.data, dept, hidden, 'hidden').filter((p) => clientMatches(p, client)).length : 0;
 
   let body: React.ReactNode = null;
   if (projects.status === 'error') body = <div className="pt-empty">Failed to load</div>;
   else if (projects.status === 'ok') {
-    const list = deptProjects(projects.data, dept, hidden, showHidden ? 'hidden' : 'visible');
+    const list = deptProjects(projects.data, dept, hidden, showHidden ? 'hidden' : 'visible').filter((p) => clientMatches(p, client));
     if (!list.length) {
       body = <div className="pt-empty">{showHidden ? `No hidden projects in ${dept}.` : `No projects to show in ${dept}.`}</div>;
     } else {
