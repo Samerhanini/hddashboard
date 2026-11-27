@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { DEPTS, VIEWS, type Dept, type ProjectRow, type View } from '@/lib/types';
 import { bldgOf, clientMatches, deptProjects, firstProject } from '@/lib/rules';
 import { useDataset } from '@/lib/useDataset';
@@ -26,7 +26,7 @@ function deptFromHash(): Dept | null {
   return (DEPTS as string[]).includes(h) ? (h as Dept) : null;
 }
 
-export default function Dashboard() {
+export default function Dashboard({ userbar }: { userbar?: ReactNode }) {
   const projects = useDataset<ProjectRow>('/api/projects');
   const [dept, setDept] = useState<Dept>('HD');
   const [view, setView] = useState<View>('schedule');
@@ -103,6 +103,7 @@ export default function Dashboard() {
     <DashboardContext.Provider value={state}>
       <div className="pt-wrap">
         <aside className="pt-sidebar">
+          {userbar}
           <DeptTabs />
           <ProjectBrowser />
         </aside>
