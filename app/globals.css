@@ -114,8 +114,6 @@ body{margin:0;background:var(--color-bg);padding:24px}
 .pt-meet ul{margin:6px 0 0;padding-left:18px;line-height:1.5}
 .pt-meet a{color:var(--color-fg);font-size:var(--cds-font-size-caption)}
 .pt-meet-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--cds-gap-md);align-items:start}
-@media (max-width:1000px){.pt-meet-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:700px){.pt-meet-list{grid-template-columns:1fr}}
 .pt-meet-list .pt-empty{grid-column:1/-1}
 .pt-meet-right{display:flex;align-items:center;gap:4px}
 .pt-meet-x{width:18px;height:18px;line-height:16px;text-align:center;font-size:13px;padding:0;border:none;border-radius:4px;background:transparent;color:var(--color-fg-muted);cursor:pointer}
@@ -192,7 +190,6 @@ body{margin:0;background:var(--color-bg);padding:24px}
 
 /* ---- website additions ---- */
 .pt-notice{margin:0;font-size:var(--cds-font-size-caption);color:var(--color-warn);background:color-mix(in srgb, var(--color-warn) 10%, var(--color-panel));border:1px solid color-mix(in srgb, var(--color-warn) 35%, var(--color-border-line));border-radius:var(--cds-radius);padding:6px 10px}
-@media (max-width:600px){body{padding:16px}}
 .pt-userbar{display:flex;justify-content:flex-end;align-items:center;gap:var(--cds-gap-sm);font-family:var(--font-anthropic-sans);font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin:-8px 0 var(--cds-gap-md);min-width:0}
 .pt-userbar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pt-userbar form{margin:0}
@@ -205,7 +202,10 @@ body{margin:0;background:var(--color-bg);padding:24px}
 .pt-signin-note{margin:var(--cds-gap-md) 0 0}
 
 /* ---- left sidebar layout (Nov 27, 2026): full-height left nav (clients, departments, projects); views start right of it ---- */
-.pt-wrap{flex-direction:row;align-items:flex-start}
+/* No reflow below desktop widths: the shell keeps a 1400px min-width, so on
+   a phone the dashboard stays full-size and scrolls sideways (same layout
+   as desktop). The old max-width:760px stacking rules were removed Nov 28. */
+.pt-wrap{flex-direction:row;align-items:flex-start;min-width:1400px}
 .pt-sidebar{position:sticky;top:0;max-height:100vh;overflow-y:auto;width:224px;flex:none;display:flex;flex-direction:column;gap:var(--cds-gap-lg)}
 .pt-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--cds-gap-lg)}
 .pt-side-label{display:none;font-size:11px;font-weight:var(--cds-font-weight-medium);letter-spacing:.08em;text-transform:uppercase;color:var(--color-fg-muted);margin:0 0 var(--cds-gap-xs)}
@@ -217,11 +217,11 @@ body{margin:0;background:var(--color-bg);padding:24px}
 .pt-sidebar .pt-tab.pt-dept{width:100%}
 .pt-op-text{display:none}
 .pt-sidebar .pt-op-text{display:flex}
+/* Client accordion stays open on touch screens (no hover there), so the
+   filter stays reachable; the layout itself never stacks anymore. */
 @media (max-width:760px){
-  .pt-wrap{flex-direction:column}
-  .pt-sidebar{position:static;width:100%;max-height:none;overflow:visible}
-  .pt-sidebar .pt-tabs{flex-direction:row;flex-wrap:wrap}
-  .pt-sidebar .pt-depts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,220px))}
+  .pt-clients-wrap .pt-tabs{max-height:none;opacity:1;visibility:visible}
+  .pt-clients-wrap .pt-caret{display:none}
 }
 
 /* ---- userbar in the sidebar + tighter top so the view buttons sit higher (Nov 27, 2026) ---- */
@@ -235,10 +235,6 @@ body{padding:12px 24px 24px}
 .pt-clients-wrap:hover .pt-caret{transform:rotate(180deg)}
 .pt-clients-wrap .pt-tabs{max-height:0;overflow:hidden;opacity:0;visibility:hidden;transition:max-height .25s ease,opacity .2s ease,visibility 0s linear .25s}
 .pt-clients-wrap:hover .pt-tabs,.pt-clients-wrap:focus-within .pt-tabs{max-height:320px;opacity:1;visibility:visible;transition:max-height .25s ease,opacity .2s ease,visibility 0s}
-@media (max-width:760px){
-  .pt-clients-wrap .pt-tabs{max-height:none;opacity:1;visibility:visible}
-  .pt-clients-wrap .pt-caret{display:none}
-}
 
 /* ---- sidebar project tiles: smaller, but still bigger than dept rows (Nov 27, 2026) ---- */
 .pt-sidebar .pt-icon{padding:6px 8px}
