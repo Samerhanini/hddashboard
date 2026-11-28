@@ -12,7 +12,7 @@ const PT_TIERS: [string, string[]][] = [
   ['Development', ['Sponsors', 'Development']],
   ['Legal', ['Acquisition Legal', 'Construction Legal', 'HTC Legal', 'LIHTC Legal', 'Land Use', 'Tax Abatement', 'Agency Legal']],
   ['Design', ['Architecture', 'MEP', 'Structural', 'Planning', 'Civil', 'Traffic', 'Elevator', 'Geotechnical', 'Energy']],
-  ['Consultants', ['Environmental', 'Surveyor', 'Expeditor', 'Affordable Housing']],
+  ['Consultant', ['Environmental', 'Surveyor', 'Expeditor', 'Affordable Housing']],
   ['Construction', ['Construction Manager', 'General Contractor', 'Expeditor']],
   ['Property Management', ['Property Manager', 'Marketing', 'Social Media Marketing']],
 ];
@@ -66,12 +66,25 @@ export default function OverviewView() {
   if (rs.status === 'error') body = <div className="pt-empty">Failed to load the roster: {rs.message || ''}</div>;
   else if (rs.status === 'ok' && project) {
     const roster = rs.data.filter((r) => r.project === project.name);
-    const tiers: [string, string[]][] = PT_TIERS.map(([t1, t2s]) => [t1, t2s.slice()]);
+    // Section order follows the Project Roles Matrix sheet (Group column),
+    // then any built-in sections the sheet doesn't list, then groups found
+    // only in the roster. A section with no subsections yet gets a General
+    // one so a line can still be added under it.
+    const tiers: [string, string[]][] = [];
+    const byName = new Map(PT_TIERS.map(([t1, t2s]) => [norm(t1), t2s]));
+    for (const name of rs.tiers || []) {
+      const t2s = byName.get(norm(name));
+      tiers.push([name, t2s ? t2s.slice() : []]);
+    }
+    for (const [t1, t2s] of PT_TIERS) {
+      if (!tiers.some(([a]) => norm(a) === norm(t1))) tiers.push([t1, t2s.slice()]);
+    }
     roster.forEach((r) => {
       let t = tiers.find(([a]) => norm(a) === norm(r.tier1));
       if (!t) { t = [r.tier1 || 'Other', []]; tiers.push(t); }
       if (!t[1].some((x) => norm(x) === norm(r.tier2))) t[1].push(r.tier2 || 'General');
     });
+    tiers.forEach((t) => { if (!t[1].length) t[1].push('General'); });
     body = (
       <>
         {note && <div className="pt-empty">{note}</div>}
