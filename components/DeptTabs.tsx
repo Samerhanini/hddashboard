@@ -1,11 +1,8 @@
 'use client';
 
-import { format } from 'd3';
 import { DEPTS, DEPT_COLORS, DEPT_NAMES } from '@/lib/types';
 import { clientMatches, distinctClients, rowInDept } from '@/lib/rules';
 import { useDashboard } from './DashboardContext';
-
-const fmtNum = format(',');
 
 /** Department tabs (deptBadge + deptCount in the original), with the client filter row above them. */
 export default function DeptTabs() {
@@ -19,10 +16,9 @@ export default function DeptTabs() {
     const all = projects.data.filter((p) => rowInDept(p, d) && clientMatches(p, client) && p.status !== 'Completed' && p.status !== 'Cancelled');
     const act = all.filter((p) => p.status === 'Active');
     const held = all.filter((p) => p.status === 'On Hold');
-    const open = all.reduce((n, p) => n + p.open_tasks, 0);
-    if (!act.length && held.length) return held.length + ' On Hold · ' + fmtNum(open) + ' open tasks';
-    if (held.length) return act.length + ' active · ' + held.length + ' On Hold · ' + fmtNum(open) + ' open tasks';
-    return act.length + ' active · ' + fmtNum(open) + ' open tasks';
+    if (!act.length && held.length) return held.length + ' On Hold';
+    if (held.length) return act.length + ' active · ' + held.length + ' On Hold';
+    return act.length + ' active';
   };
 
   return (
