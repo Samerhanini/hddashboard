@@ -19,6 +19,7 @@ export const rosterTab = () => (process.env.ROSTER_SHEET_TAB || 'Roster').trim()
 export const matrixSpreadsheetId = () => (process.env.MATRIX_SPREADSHEET_ID || MATRIX_SPREADSHEET_ID).trim();
 export const matrixTab = () => (process.env.MATRIX_PROJECT_TAB || 'Project').trim();
 export const matrixRolesTab = () => (process.env.MATRIX_ROLES_TAB || 'Roles x Projects').trim();
+export const matrixAgendaTab = () => (process.env.MATRIX_AGENDA_TAB || 'Agenda').trim();
 export const rosterTabId = () => {
   const n = parseInt(process.env.ROSTER_SHEET_TAB_ID || '401964840', 10);
   return isNaN(n) ? 401964840 : n;
