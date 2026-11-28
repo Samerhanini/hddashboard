@@ -11,6 +11,7 @@ import {
   sheetsValuesUpdate,
 } from './googleSheets';
 import { parseRosterValues } from './parse/sheets';
+import { loadMatrixTierOrder } from './matrixTiers';
 
 // Roster tab of the Project Team Roster sheet: read, edit cells, append a row, delete a row.
 // Live Google Sheets calls (service account, see lib/server/googleSheets.ts) once
@@ -39,7 +40,10 @@ async function readLiveRows(): Promise<RosterRow[]> {
 
 export async function loadRoster(): Promise<ApiRows<RosterRow>> {
   if (!sheetsReady()) return { rows: sample().map((r) => ({ ...r })), source: 'sample' };
-  return cached(CACHE_KEY, async () => ({ rows: await readLiveRows(), source: 'live' as const }));
+  return cached(CACHE_KEY, async () => {
+    const [rows, tiers] = await Promise.all([readLiveRows(), loadMatrixTierOrder()]);
+    return { rows, source: 'live' as const, tiers };
+  });
 }
 
 /**
