@@ -226,4 +226,9 @@ export interface ApiRows<T> {
    * without costs instead of an error. Absent (treated as true) otherwise.
    */
   available?: boolean;
+  /**
+   * Roster only: Tier 1 section order from the Group column of the
+   * Project Roles Matrix sheet. Absent when the sheet couldn't be read.
+   */
+  tiers?: string[];
 }
