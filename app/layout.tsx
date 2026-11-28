@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -9,12 +9,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// No fixed viewport: phones use the default device-width viewport, and the
-// desktop layout is kept by the min-width on .pt-wrap in globals.css — the
-// page stays full-size and scrolls sideways instead of reflowing. (A fixed
-// 1440px viewport was tried Nov 27 and Samer didn't like the zoomed-out
-// look, so it was reverted.)
-
+// Phones render the dashboard at a fixed desktop width and shrink it to
+// fit, instead of reflowing: the layout viewport is 1440px (sidebar 224 +
+// main content incl. the 1080px roster table), so the whole dashboard is
+// visible at once and pinch-zoom still works. Desktop browsers ignore the
+// viewport width, so nothing changes there. (Full-size scroll-sideways was
+// tried Nov 28 and Samer went back to zoomed-out the same morning.)
+export const viewport: Viewport = {
+  width: 1440,
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
